@@ -1,0 +1,87 @@
+@prefix : <https://www.sfb1574.kit.edu/ontologies/FlexConveyor#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix inf: <https://www.sfb1574.kit.edu/ontologies/CrcInterfaces#> .
+
+: rdf:type owl:Ontology ;
+    owl:imports inf: ;
+    rdfs:comment "Ontology for modeling flex conveyor systems with modules and connections, transported parcels." ;
+    owl:versionInfo "1.0" .
+
+:FlexConveyorSystem a owl:Class ; 
+    rdfs:comment "A system of connected flex conveyor modules." .
+
+:FlexConveyorModule a owl:Class ;
+    rdfs:comment "A square conveyor module with 4 connectable ports." .
+
+
+
+:hasNorthConnection a owl:ObjectProperty ;
+    rdfs:subPropertyOf inf:isAttribute ;
+    rdfs:domain :FlexConveyorModule ;
+    rdfs:range [
+        a owl:Class ;
+        [ a owl:Restriction ;
+          owl:onProperty inf:hasReferencedObject ;
+          owl:someValuesFrom :FlexConveyorModule
+        ]
+    ] ;
+    rdfs:comment "The module connected to the north port (port 1)." .
+
+:hasEastConnection a owl:ObjectProperty ;
+    rdfs:subPropertyOf inf:isAttribute ;
+    rdfs:domain :FlexConveyorModule ;
+    rdfs:range :FlexConveyorModule ;
+    rdfs:comment "The module connected to the east port (port 2)." .
+
+:hasSouthConnection a owl:ObjectProperty ;
+    rdfs:subPropertyOf inf:isAttribute ;
+    rdfs:domain :FlexConveyorModule ;
+    rdfs:range :FlexConveyorModule ;
+    rdfs:comment "The module connected to the south port (port 3)." .
+
+:hasWestConnection a owl:ObjectProperty ;
+    rdfs:subPropertyOf inf:isAttribute ;
+    rdfs:domain :FlexConveyorModule ;
+    rdfs:range :FlexConveyorModule ;
+    rdfs:comment "The module connected to the west port (port 4)." .
+
+
+
+
+
+
+
+
+:Parcel a owl:Class ;
+    rdfs:comment "A parcel transported on the flex conveyor system." .
+
+
+
+:isPossessedBy a owl:ObjectProperty ;
+    rdfs:domain :Parcel ;
+    rdfs:range :FlexConveyorModule ;
+    owl:inverseOf :hasPossession ;
+    rdfs:comment "Parcel is possessed by exactly one module (if any)." .
+
+:hasPossession a owl:ObjectProperty ;
+    rdfs:domain :FlexConveyorModule ;
+    rdfs:range :Parcel ;
+    owl:inverseOf :isPossessedBy ;
+    rdfs:comment "a FlexconveyorModule posesses a Parcel." .
+
+:hasDestination a owl:ObjectProperty ;
+    rdfs:domain :Parcel ;
+    rdfs:range :FlexConveyorModule ;
+    rdfs:comment "Destination module for the parcel (exactly one module)." .
+
+
+
+:containsFlexConveyorModule a owl:ObjectProperty ;
+    rdfs:subPropertyOf inf:includes ;
+    rdfs:domain :FlexConveyorSystem ;
+    rdfs:range :FlexConveyorModule ;
+    rdfs:comment "Indicates that a FlexConveyorSystem contains a FlexConveyorModule." .

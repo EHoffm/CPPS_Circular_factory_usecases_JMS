@@ -1,0 +1,60 @@
+@prefix : <https://www.sfb1574.kit.edu/ontologies/FlexConveyor#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# SHACL Shapes for FlexConveyor Use Case
+#################################################################
+
+# 1. A :Parcel object must have exactly one :isPossessedBy relation
+:ParcelShape a sh:NodeShape ;
+    sh:targetClass :Parcel ;
+    sh:property [
+        sh:path :isPossessedBy ;
+        sh:class :FlexConveyorModule ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] .
+
+# 2. A :FlexConveyorModule can have at maximum one :hasPossession relation
+:FlexConveyorModulePossessionShape a sh:NodeShape ;
+    sh:targetClass :FlexConveyorModule ;
+    sh:property [
+        sh:path :hasPossession ;
+        sh:class :Parcel ;
+        sh:maxCount 1 ;
+    ] .
+
+# 3. Connection cardinality restrictions for FlexConveyorModule
+:FlexConveyorModuleConnectionShape a sh:NodeShape ;
+    sh:targetClass :FlexConveyorModule ;
+    
+    # Maximum one north connection
+    sh:property [
+        sh:path :hasNorthConnection ;
+        sh:class :FlexConveyorModule ;
+        sh:maxCount 1 ;
+    ] ;
+    
+    # Maximum one east connection
+    sh:property [
+        sh:path :hasEastConnection ;
+        sh:class :FlexConveyorModule ;
+        sh:maxCount 1 ;
+    ] ;
+    
+    # Maximum one south connection
+    sh:property [
+        sh:path :hasSouthConnection ;
+        sh:class :FlexConveyorModule ;
+        sh:maxCount 1 ;
+    ] ;
+    
+    # Maximum one west connection
+    sh:property [
+        sh:path :hasWestConnection ;
+        sh:class :FlexConveyorModule ;
+        sh:maxCount 1 ;
+    ] .
+
+

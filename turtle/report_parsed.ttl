@@ -1,0 +1,24 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rf: <http://rdf4j.org/schema/rdf4j#> .
+@prefix rfsh: <http://rdf4j.org/shacl-extensions#> .
+@prefix fc: <https://www.sfb1574.kit.edu/ontologies/FlexConveyor#> .
+
+_:report1 sh:conforms false^^xsd:boolean ;
+          rdf:type sh:ValidationReport ;
+          rf:truncated false^^xsd:boolean ;
+          sh:result _:result1 .
+
+_:result1 rdf:type sh:ValidationResult ;
+          sh:focusNode fc:module2 ;
+          rfsh:shapesGraph rf:SHACLShapeGraph ;
+          sh:resultPath fc:hasPossession ;
+          sh:sourceConstraintComponent sh:MaxCountConstraintComponent ;
+          sh:resultSeverity sh:Violation ;
+          sh:sourceShape _:shape1 .
+
+_:shape1 rdf:type sh:PropertyShape ;
+         sh:path fc:hasPossession ;
+         sh:maxCount 1^^xsd:integer .

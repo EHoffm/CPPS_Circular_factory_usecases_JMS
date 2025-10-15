@@ -1,0 +1,47 @@
+@prefix : <https://www.sfb1574.kit.edu/ontologies/FlexConveyor#> .
+@prefix fc: <https://www.sfb1574.kit.edu/ontologies/FlexConveyor#> .
+@prefix inf: <https://www.sfb1574.kit.edu/ontologies/CrcInterfaces#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+@base <https://www.sfb1574.kit.edu/ontologies/FlexConveyorInstances#> .
+
+: a owl:Ontology ;
+    owl:imports fc:;
+    owl:imports inf: .
+
+
+:exampleSystem1 a fc:FlexConveyorSystem ;
+    rdfs:label "Example Flex Conveyor System 1" ;
+    fc:containsFlexConveyorModule :module1, :module2, :module3 , :module4 ;
+    rdfs:comment "An example flex conveyor system with three connected modules." .
+
+:module1 a fc:FlexConveyorModule, owl:NamedIndividual ;
+    rdfs:label "Module 1" ;
+    fc:hasNorthConnection :module2 ;
+    
+    rdfs:comment "The first module in the example system." .
+
+:module2 a fc:FlexConveyorModule, owl:NamedIndividual ;
+    rdfs:label "Module 2" ;
+    fc:hasSouthConnection :module1 ;
+    fc:hasEastConnection :module3 ;
+    fc:hasWestConnection :module4 ;
+    
+    rdfs:comment "The second module in the example system." .
+
+:module3 a fc:FlexConveyorModule ;
+    rdfs:label "Module 3" ;
+    fc:hasWestConnection :module2 ;
+    rdfs:comment "The third module in the example system." .
+
+:module4 a fc:FlexConveyorModule ;
+    rdfs:label "Module 4" ;
+    fc:hasEastConnection :module2 ;
+    rdfs:comment "An unconnected module in the example system." .
+
+
+
