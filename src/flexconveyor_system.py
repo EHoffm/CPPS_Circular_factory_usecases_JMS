@@ -8,7 +8,7 @@ logging.basicConfig(
     filename="flexconveyor.log",
     filemode="w",  # Overwrite log file on startup
     format="%(asctime)s %(levelname)s: %(message)s",
-    level=logging.DEBUG,
+    level=logging.INFO,
 )
 
 # Write a startup message to ensure log file exists
