@@ -31,6 +31,9 @@ class AnomalyDetector:
         hasUpperDynamicLoseningTorque = data[IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUpperDynamicLoseningTorque")] # double, Specifies the maximum torque at which the screw may loosen during unscrewing
         hasLowerAxialForce = data[IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerAxialForce")] # double; minimum axial force that indicates the screw moving towards the screwdriver
         hasSuccessStatus = data[IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus")] # "Successfull" or "Loose Anchor" or Rounded Head" or ...
+        hasAxialForceApproach = data[IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach")] # double; The axial force measured while the screwdriver approaches the screw head.
+        hasPositionOnApproach = data[IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach")] # double; The position along the screw axis when approaching the screw
+
         
         data[IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus")] = "Successful"
         
@@ -39,7 +42,12 @@ class AnomalyDetector:
         axial_force_time_series = json.loads(data[IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData")][IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData")])
 
         # Anomaly detection logic
-
+        # iterate over unscrewing_torque_time_series and axial_force_time_series and position time series simultaneously
+        # first check while position > position_on_approach: axial_force < hasAxialForceApproach ; else: Suceess_state = "Occluded Screw"
+        # then 
+        # then check if the unscrewing_torque > lower_tightening_torque. else: Success_state = "Rounded Head" 
+        # then check if axial_force > lower_axial_force
+        # then check if unscrewing_torque < hasUpperDynamicLoseningTorque
 
         return data
     
