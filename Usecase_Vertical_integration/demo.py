@@ -1,14 +1,15 @@
-from graph_db_interface import IRI, GraphDB, GraphDBCredentials
+from graph_db_interface import GraphDB, GraphDBCredentials, IRI
 from circular_factory_ogm.ogm import OGM
 import json
 
+from dotenv import load_dotenv
+from screwing_resource import ScrewingResource
+from anomaly_detector import AnomalyDetector
+from learner import Learner
+load_dotenv()  # Call this at the start of your script
 
-credentials = GraphDBCredentials(
-    base_url="http://graphdb.iam-mms.kit.edu/",
-    username="your_username",
-    password="your_password",
-    repository="OGM",
-)
+credentials = GraphDBCredentials.from_env()
+
 def main():
     ogm = OGM(db=GraphDB(credentials=credentials), loader=None)
     screwing_resource = ScrewingResource()

@@ -55,7 +55,7 @@
     rdfs:domain :screw ;
     rdfs:range xsd:decimal ;
     rdfs:label "has lower tightening torque"@en ;
-    rdfs:comment "Indicates the minimum torque required to properly tighten the screw."@en .
+    rdfs:comment "Indicates the minimum torque required to properly tighten the screw. to check if torque can be applied to it."@en .
 
 :hasUpperDynamicLoseningTorque a owl:DatatypeProperty ;
     rdfs:domain :screw ;
