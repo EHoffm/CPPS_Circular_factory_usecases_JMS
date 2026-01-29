@@ -51,6 +51,12 @@
     rdfs:label "has axial force time series data"@en ;
     rdfs:comment "Links to the time series data of axial force recorded during the unscrewing process."@en .
 
+:hasRobotPositionTimeSeriesData a owl:ObjectProperty ;
+    rdfs:domain :unscrewingOperation ;
+    rdfs:range :TimeSeriesData ;
+    rdfs:label "has position time series data"@en ;
+    rdfs:comment "Links to the time series data of robot TCO position along screw axis recorded during the unscrewing process."@en .
+
 :hasLowerTighteningTorque a owl:DatatypeProperty ;
     rdfs:domain :screw ;
     rdfs:range xsd:decimal ;

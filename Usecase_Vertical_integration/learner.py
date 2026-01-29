@@ -3,18 +3,20 @@ from circular_factory_ogm.ogm import OGM
 import json
 
 
-credentials = GraphDBCredentials.from_env()
+
 
 # GraphdbCredentials.from_env()
 
 
 class Learner:
     def __init__(self):
+        credentials = GraphDBCredentials.from_env()
         self.ogm = OGM(db=GraphDB(credentials=credentials), loader=None)
         self.process_desriptions = [] # list to hold fetched process descriptions per screw type
         self.learned_parameters = {} # dict to hold learned parameters per screw type
         self.screws = [s for s,p,o in self.ogm.db.triples_get(
-            pred=IRI("w3.org/1999/02/22-rdf-syntax-ns#type"),
+            #pred=IRI("w3.org/1999/02/22-rdf-syntax-ns#type"),
+            pred=IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
             obj=IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#Screw"),
         )]
         self.prop_chains = ["as in anomaly_detector" ]
@@ -31,8 +33,9 @@ class Learner:
             )
         ]
         for iri in iris:
-            self.process_desriptions.append(self.ogm.fetch(self.prop_chains,instance_iri=iri).instance.model_dump()) # type: ignore TODO: Etienne
-
+            #self.process_desriptions.append(self.ogm.fetch(self.prop_chains,instance_iri=iri).instance.model_dump()) # type: ignore TODO: Etienne
+            self.process_desriptions.append(self.ogm.fetch(self.prop_chains,instance_iri=iri).instance.model_dump(), materialize=True) # type: ignore TODO: class_scope.from_property_chains(prop_chains)
+    
     def learn_from_process_descriptions(self):
         learned_parameters = {}
 

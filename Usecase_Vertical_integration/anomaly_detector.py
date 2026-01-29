@@ -1,13 +1,15 @@
 from graph_db_interface import GraphDB, GraphDBCredentials, IRI
 from circular_factory_ogm.ogm import OGM 
+from circular_factory_ogm.utils.class_scope import ClassScope
 import json
 
-credentials = GraphDBCredentials.from_env()
+
 
 #GraphdbCredentials.from_env()
 
 class AnomalyDetector:
     def __init__(self, threshold: float):
+        credentials = GraphDBCredentials.from_env()
         self.threshold = threshold
         self.ogm = OGM(db=GraphDB(credentials=credentials), loader=None)
     
@@ -18,7 +20,9 @@ class AnomalyDetector:
         property_chains= [[IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"), IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData")],
             [IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData"), IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus")] ]
         
-        fetched_instance= self.ogm.fetch(property_chains, instance_iri=instance_iri).instance
+        class_scope = ClassScope.from_property_chains(property_chains) # type: ignore
+        fetched_instance= self.ogm.fetch(class_scope, instance_iri=instance_iri).instance #type: ignore TODO: class_scope.from_property_chains(prop_chains)
+        
         return fetched_instance.model_dump()
     
     def detect_anomaly(self, data: dict) -> dict:
