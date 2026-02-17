@@ -6,6 +6,7 @@ Provides system bootstrapping, runtime monitoring, and control capabilities.
 """
 
 import streamlit as st
+from utils.bootstrap import register_shutdown_handlers
 from utils import (
     initialize_login_session_state,
     render_login_sidebar,
@@ -15,6 +16,8 @@ from utils import (
     render_flex_module_instantiation,
     initialize_flex_instance_session_state,
 )
+
+register_shutdown_handlers()
 
 # ============================================================================
 # Page Configuration
@@ -116,7 +119,7 @@ else:
 
     with tab1:
         st.header("System Bootstrapping")
-        
+
         if not is_ogm_initialized():
             st.warning("⚠️ OGM not initialized. Please reconnect to GraphDB.")
         else:
