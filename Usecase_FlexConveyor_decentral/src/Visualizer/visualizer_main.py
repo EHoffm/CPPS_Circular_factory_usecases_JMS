@@ -165,12 +165,54 @@ else:
 
     with tab2:
         st.header("Runtime Monitoring")
-        if st.button(
-            "explore instantiated Modules", key="explore_instantiated_modules"
+        if "discovered_modules" not in st.session_state:
+            st.session_state.discovered_modules = []
+        if "adjacency_matrix" not in st.session_state:
+            st.session_state.adjacency_matrix = {}
+
+        action_col1, action_col2 = st.columns(2)
+
+        if action_col1.button(
+            "discover instantiated modules", key="discover_instantiated_modules"
         ):
             monitor_module = importlib.import_module("utils.system_state_monitor")
             monitor_module = importlib.reload(monitor_module)
-            monitor_module.discover_modules(st.session_state.get("ogm"))
+            st.session_state.discovered_modules = monitor_module.discover_modules(
+                st.session_state.get("ogm")
+            )
+
+        if action_col2.button(
+            "build adjacency matrix", key="build_adjacency_matrix"
+        ):
+            monitor_module = importlib.import_module("utils.system_state_monitor")
+            monitor_module = importlib.reload(monitor_module)
+            st.session_state.adjacency_matrix = monitor_module.build_adjacency_matrix(
+                st.session_state.get("ogm")
+            )
+
+        if st.session_state.adjacency_matrix:
+            st.subheader("Adjacency Matrix")
+            st.json(st.session_state.adjacency_matrix)
+
+        button_columns = st.columns(4)
+        for index, discovered_module in enumerate(st.session_state.discovered_modules):
+            module_id = discovered_module.get("module_id", "unknown module")
+            accessible_at = discovered_module.get("accessible_at")
+            if accessible_at:
+                swagger_ui_url = (
+                    accessible_at
+                    if accessible_at.rstrip("/").endswith("/docs")
+                    else f"{accessible_at.rstrip('/')}/docs"
+                )
+                with button_columns[index % 4]:
+                    st.link_button(
+                        f"Open SwaggerUI ({module_id})",
+                        swagger_ui_url,
+                    )
+            else:
+                with button_columns[index % 4]:
+                    st.caption(f"{module_id}: no accessibleAt value found")
+
         st.info("Coming soon: Real-time system visualization")
 
     with tab3:

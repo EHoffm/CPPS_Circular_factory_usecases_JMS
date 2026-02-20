@@ -1,6 +1,6 @@
 import threading
 import time
-import importlib
+from pprint import pformat
 from typing import Optional
 import uvicorn
 import aas_middleware as aas
@@ -157,6 +157,9 @@ class FlexConveyor:
             named_graph=IRI("http://w3id.org/circularfactory/FlexConveyorInstances"),
         )
         print(f"✓ Registered service in knowledge graph with IRI: {service_node.id}")
+        adjacency_matrix = self.build_adjacency_matrix()
+        print("Adjacency matrix:")
+        print(pformat(adjacency_matrix))
         
 
 
@@ -200,10 +203,82 @@ class FlexConveyor:
         """
 
     def build_adjacency_matrix(self):
-        adjacency_matrix_module = importlib.import_module(
-            "FlexConveyor_Module.adjacency_matrix"
+        """Build adjacency map: {module_iri: [(connectsTo, hasDirection), ...]}."""
+        adj: dict[str, list[tuple[str | None, str | None]]] = {}
+
+        rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+        module_class = IRI(
+            "http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule"
         )
-        return adjacency_matrix_module.build_adjacency_matrix(self)
+
+        has_connection = IRI(
+            "http://w3id.org/circularfactory/FlexConveyor#hasConnection"
+        )
+        connects_to = IRI("http://w3id.org/circularfactory/FlexConveyor#connectsTo")
+        has_direction = IRI(
+            "http://w3id.org/circularfactory/FlexConveyor#hasDirection"
+        )
+
+        triples = self.ogm.db.triples_get(pred=rdf_type, obj=module_class)
+        modules = [triple[0] for triple in triples]
+
+        property_chains = [
+            [has_connection, connects_to],
+            [has_connection, has_direction],
+        ]
+        class_scope = ClassScope.from_property_chains(property_chains)
+
+        has_connection_key = has_connection.lined
+        connects_to_key = connects_to.lined
+        has_direction_key = has_direction.lined
+
+        for module_iri in modules:
+            module_instance = self.ogm.fetch(
+                instance_iri=module_iri,
+                class_scope=class_scope,
+                materialize=True,
+            ).instance
+
+            if isinstance(module_instance, dict):
+                module_data = module_instance
+            elif hasattr(module_instance, "model_dump"):
+                module_data = module_instance.model_dump(by_alias=True)
+            elif hasattr(module_instance, "dict"):
+                module_data = module_instance.dict()
+            else:
+                module_data = {}
+
+            connections = module_data.get(has_connection_key, [])
+            adjacency_entries: list[tuple[str | None, str | None]] = []
+
+            for connection in connections:
+                if not isinstance(connection, dict):
+                    continue
+
+                connects_to_list = connection.get(connects_to_key, [])
+                direction_list = connection.get(has_direction_key, [])
+
+                target: str | None = None
+                if connects_to_list:
+                    first_target = connects_to_list[0]
+                    if isinstance(first_target, dict):
+                        target = first_target.get("id")
+                    else:
+                        target = str(first_target)
+
+                direction: str | None = None
+                if direction_list:
+                    first_direction = direction_list[0]
+                    if isinstance(first_direction, dict):
+                        direction = first_direction.get("id")
+                    else:
+                        direction = str(first_direction)
+
+                adjacency_entries.append((target, direction))
+
+            adj[str(module_iri)] = adjacency_entries
+
+        return adj
 
 
     def receive(
