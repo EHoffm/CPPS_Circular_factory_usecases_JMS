@@ -1,7 +1,10 @@
 @prefix : <http://w3id.org/circularfactory/FlexConveyor#> .
+@prefix domain: <> .
+@prefix kadi: <> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sp_ins: <> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 #################################################################
@@ -25,6 +28,8 @@
 :Box rdf:type owl:Class .
 
 :Connection rdf:type owl:Class .
+
+:Service rdf:type owl:Class .
 
 :BoxState rdf:type owl:Class .
 
@@ -85,6 +90,15 @@
     rdfs:domain :Connection ;
     rdfs:range :Direction .
 
+:hasService rdf:type owl:ObjectProperty ;
+    rdfs:domain :FlexConveyorModule ;
+    rdfs:range :Service .
+
+:isServiceOf rdf:type owl:ObjectProperty ;
+    owl:inverseOf :hasService ;
+    rdfs:domain :Service ;
+    rdfs:range :FlexConveyorModule .
+
 #################################################################
 # Datatype Properties
 #################################################################
@@ -100,6 +114,10 @@
 :hasY rdf:type owl:DatatypeProperty ;
     rdfs:domain :FlexConveyorModule ;
     rdfs:range xsd:integer .
+
+:accessibleAt rdf:type owl:DatatypeProperty ;
+    rdfs:domain :Service ;
+    rdfs:range xsd:anyURI .
 
 
 

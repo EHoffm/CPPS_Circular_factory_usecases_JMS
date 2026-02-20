@@ -5,7 +5,37 @@ A Streamlit-powered user interface for the FlexConveyor system with GraphDB inte
 Provides system bootstrapping, runtime monitoring, and control capabilities.
 """
 
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 import streamlit as st
+
+
+def _bootstrap_import_paths() -> None:
+    script_path = Path(__file__).resolve()
+    package_dirs = (
+        "circular_factory_ogm",
+        "graph_db_interface",
+        "aas_middleware_inf",
+        "datamodel_connector",
+    )
+
+    for parent in script_path.parents:
+        parent_str = str(parent)
+        if parent_str not in sys.path:
+            sys.path.insert(0, parent_str)
+        for package_dir in package_dirs:
+            candidate = parent / package_dir
+            if candidate.is_dir():
+                candidate_str = str(candidate)
+                if candidate_str not in sys.path:
+                    sys.path.insert(0, candidate_str)
+
+
+_bootstrap_import_paths()
+
 from utils.bootstrap import register_shutdown_handlers
 from utils import (
     initialize_login_session_state,
@@ -149,3 +179,30 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
+def _is_streamlit_runtime() -> bool:
+    try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+
+        return get_script_run_ctx() is not None
+    except Exception:
+        return False
+
+
+def main() -> int:
+    """Run this visualizer via `streamlit run` when invoked as a plain Python script."""
+    if _is_streamlit_runtime():
+        return 0
+
+    env = os.environ.copy()
+    env["FLEXCONVEYOR_STREAMLIT_WRAPPER"] = "1"
+    script_path = Path(__file__).resolve()
+    return subprocess.call(
+        [sys.executable, "-m", "streamlit", "run", str(script_path)],
+        env=env,
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -158,7 +158,7 @@ def instantiate_modules(
 
                 # Record result
                 result = {
-                    "module_id": str(node.iri),
+                    "module_id": str(node.id),
                     "status": "running",
                     "api_url": flex_module.get_api_url(),
                     "port": flex_module.port,

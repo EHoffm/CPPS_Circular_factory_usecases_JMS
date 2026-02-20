@@ -68,6 +68,10 @@ class FlexConveyor:
                 IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
                 IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection"),
             ],
+            [
+                IRI("http://w3id.org/circularfactory/FlexConveyor#hasService"),
+                IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt"),
+            ],
         ]
         class_scope = ClassScope.from_property_chains(property_chains)
         data_node = self.ogm.fetch(
@@ -124,8 +128,36 @@ class FlexConveyor:
         print(f"✓ FlexConveyor REST API Started")
         print(f"  Module ID: {self.module_id}")
         print(f"  Accessible at: {self.url}")
-        print(f"  Local access: http://localhost:{self.port}")
+        print(f"  GUI access: http://localhost:{self.port}/docs")
         print(f"{'='*70}\n")
+        
+        service_property_chains = [
+            [
+                IRI("http://w3id.org/circularfactory/FlexConveyor#isServiceOf"),
+            ],
+            [
+                IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt"),
+            ],
+        ]
+        service_iri = IRI("http://w3id.org/circularfactory/FlexConveyor#Service")
+        service_class_scope = ClassScope.from_property_chains(service_property_chains)
+        service_data = {
+            IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt").lined: [
+                str(self.url)
+            ],
+            IRI("http://w3id.org/circularfactory/FlexConveyor#isServiceOf").lined: [
+                {"id": str(self.module_id)}
+            ],
+        }
+        service_node = self.ogm.create(
+            class_iri=service_iri,
+            class_scope=service_class_scope,
+            data=service_data,
+            named_graph=IRI("http://w3id.org/circularfactory/FlexConveyorInstances"),
+        )
+        print(f"✓ Registered service in knowledge graph with IRI: {service_node.id}")
+        
+
 
     def _run_server(self):
         """Run the uvicorn server for this middleware instance."""
@@ -165,6 +197,13 @@ class FlexConveyor:
 
         This is a workflow that can be triggered via the REST API.
         """
+
+    def build_adjacency_matrix(self):
+        """Build an adjacency matrix of connected modules based on the knowledge graph."""
+        # This method can be implemented to query the knowledge graph for connections
+        # and build an adjacency matrix for pathfinding or visualization purposes.
+        pass
+
 
     def receive(
         self,
