@@ -12,6 +12,7 @@ from .login_handling import (
 from .flex_module_instance import (
     render_flex_module_instantiation,
     initialize_flex_instance_session_state,
+    clear_flexconveyor_instances_graph,
 )
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     "is_ogm_initialized",
     "render_flex_module_instantiation",
     "initialize_flex_instance_session_state",
+    "clear_flexconveyor_instances_graph",
 ]

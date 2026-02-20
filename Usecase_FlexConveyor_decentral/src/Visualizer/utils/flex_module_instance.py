@@ -34,6 +34,14 @@ CLASS_IRI = IRI("http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule
 DEFAULT_INSTANCE_IRI = IRI(
     "http://w3id.org/circularfactory/FlexConveyor#TemporaryModule"
 )
+FLEXCONVEYOR_INSTANCES_GRAPH_IRI = IRI(
+    "http://w3id.org/circularfactory/FlexConveyorInstances"
+)
+
+
+def clear_flexconveyor_instances_graph(ogm: OGM) -> bool:
+    """Clear the FlexConveyor instances named graph."""
+    return ogm.db.clear_graph(FLEXCONVEYOR_INSTANCES_GRAPH_IRI)
 
 
 def create_blank_flexconveyor_instance(
@@ -665,7 +673,6 @@ def render_flex_module_instantiation(ogm: OGM):
             st.json(st.session_state.modules)
 
         with st.expander(
-
             f"📋 View Created Modules ({len(st.session_state.modules)})", expanded=True
         ):
             for idx, module in enumerate(st.session_state.modules):

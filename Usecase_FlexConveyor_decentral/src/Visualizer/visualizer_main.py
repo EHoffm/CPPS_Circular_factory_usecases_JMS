@@ -6,6 +6,7 @@ Provides system bootstrapping, runtime monitoring, and control capabilities.
 """
 
 import os
+import importlib
 import subprocess
 import sys
 from pathlib import Path
@@ -43,6 +44,7 @@ from utils import (
     is_connected,
     is_ogm_initialized,
     get_ogm,
+    clear_flexconveyor_instances_graph,
     render_flex_module_instantiation,
     initialize_flex_instance_session_state,
 )
@@ -154,10 +156,21 @@ else:
             st.warning("⚠️ OGM not initialized. Please reconnect to GraphDB.")
         else:
             ogm = get_ogm()
+            if st.button("clear Knowledge graph", key="clear_knowledge_graph"):
+                if clear_flexconveyor_instances_graph(ogm):
+                    st.success("Knowledge graph cleared successfully.")
+                else:
+                    st.error("Failed to clear knowledge graph.")
             render_flex_module_instantiation(ogm)
 
     with tab2:
         st.header("Runtime Monitoring")
+        if st.button(
+            "explore instantiated Modules", key="explore_instantiated_modules"
+        ):
+            monitor_module = importlib.import_module("utils.system_state_monitor")
+            monitor_module = importlib.reload(monitor_module)
+            monitor_module.discover_modules(st.session_state.get("ogm"))
         st.info("Coming soon: Real-time system visualization")
 
     with tab3:
