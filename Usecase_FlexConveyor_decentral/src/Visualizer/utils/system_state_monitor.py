@@ -1,5 +1,7 @@
 """System state monitoring helpers for the FlexConveyor visualizer."""
 
+import http
+
 from circular_factory_ogm.ogm import OGM
 from circular_factory_ogm.utils.class_scope import ClassScope
 from circular_factory_ogm.utils.json_ogm_encoder import OGMEncoder
@@ -41,5 +43,5 @@ def discover_modules(ogm: OGM) -> None:
             class_scope=ClassScope.from_property_chains(prop_chains),
             materialize=True,
         )
-        print(f"Module {module} service info: {json.dumps(module_service.instance, cls=OGMEncoder, indent=2)}")
+        print(f"Module {module} service info: {json.dumps(module_service.instance,cls=OGMEncoder, indent=2)}")
         

@@ -1,5 +1,6 @@
 import threading
 import time
+import importlib
 from typing import Optional
 import uvicorn
 import aas_middleware as aas
@@ -199,10 +200,10 @@ class FlexConveyor:
         """
 
     def build_adjacency_matrix(self):
-        """Build an adjacency matrix of connected modules based on the knowledge graph."""
-        # This method can be implemented to query the knowledge graph for connections
-        # and build an adjacency matrix for pathfinding or visualization purposes.
-        pass
+        adjacency_matrix_module = importlib.import_module(
+            "FlexConveyor_Module.adjacency_matrix"
+        )
+        return adjacency_matrix_module.build_adjacency_matrix(self)
 
 
     def receive(
@@ -214,3 +215,7 @@ class FlexConveyor:
     def get_api_url(self) -> Optional[str]:
         """Get the URL where this module's REST API is accessible."""
         return self.url
+
+    def get_ogm(self) -> OGM:
+        """Get the OGM instance used by this module."""
+        return self.ogm
