@@ -58,6 +58,9 @@ class FlexConveyor:
         self.server_thread: Optional[threading.Thread] = None
         self.server: Optional[uvicorn.Server] = None
         self.running = False
+        self.adj: list[list[IRI | int]] = []
+        self.accessible_at_by_module: dict[IRI, str | None] = {}
+        self.service_instance_iri: Optional[IRI] = None
 
         # Setup middleware
         property_chains = [
@@ -132,32 +135,8 @@ class FlexConveyor:
         print(f"  GUI access: http://localhost:{self.port}/docs")
         print(f"{'='*70}\n")
         
-        service_property_chains = [
-            [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#isServiceOf"),
-            ],
-            [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt"),
-            ],
-        ]
-        service_iri = IRI("http://w3id.org/circularfactory/FlexConveyor#Service")
-        service_class_scope = ClassScope.from_property_chains(service_property_chains)
-        service_data = {
-            IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt").lined: [
-                str(self.url)
-            ],
-            IRI("http://w3id.org/circularfactory/FlexConveyor#isServiceOf").lined: [
-                {"id": str(self.module_id)}
-            ],
-        }
-        service_node = self.ogm.create(
-            class_iri=service_iri,
-            class_scope=service_class_scope,
-            data=service_data,
-            named_graph=IRI("http://w3id.org/circularfactory/FlexConveyorInstances"),
-        )
-        print(f"✓ Registered service in knowledge graph with IRI: {service_node.id}")
-        adjacency_matrix = self.build_adjacency_matrix()
+        self._register_service_in_knowledge_graph()
+        adjacency_matrix = self.discover_connections_and_services()
         print("Adjacency matrix:")
         print(pformat(adjacency_matrix))
         
@@ -183,6 +162,7 @@ class FlexConveyor:
         """Stop the REST API server."""
         if not self.running:
             print(f"⚠ Module {self.module_id} is not running")
+            self._cleanup_service_in_knowledge_graph()
             return
 
         self.running = False
@@ -193,7 +173,49 @@ class FlexConveyor:
             if self.server_thread.is_alive() and self.server is not None:
                 self.server.force_exit = True
                 self.server_thread.join(timeout=2)
+        self._cleanup_service_in_knowledge_graph()
         print(f"✓ FlexConveyor {self.module_id} stopped")
+
+    def _register_service_in_knowledge_graph(self) -> None:
+        """Create or update runtime service information in the knowledge graph."""
+        service_property_chains = [
+            [
+                IRI("http://w3id.org/circularfactory/FlexConveyor#isServiceOf"),
+            ],
+            [
+                IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt"),
+            ],
+        ]
+        service_iri = IRI("http://w3id.org/circularfactory/FlexConveyor#Service")
+        service_class_scope = ClassScope.from_property_chains(service_property_chains)
+        service_data = {
+            IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt").lined: [
+                str(self.url)
+            ],
+            IRI("http://w3id.org/circularfactory/FlexConveyor#isServiceOf").lined: [
+                {"id": str(self.module_id)}
+            ],
+        }
+
+        # TODO: Upsert/delete old runtime service triples for this module before creating a new service node.
+        service_node = self.ogm.create(
+            class_iri=service_iri,
+            class_scope=service_class_scope,
+            data=service_data,
+            named_graph=IRI("http://w3id.org/circularfactory/FlexConveyorInstances"),
+        )
+        self.service_instance_iri = service_node.id
+        print(f"✓ Registered service in knowledge graph with IRI: {service_node.id}")
+
+    def _cleanup_service_in_knowledge_graph(self) -> None:
+        """Cleanup runtime service information for this module from the knowledge graph."""
+        if self.service_instance_iri is None:
+            return
+
+        # TODO: Remove hasService, accessibleAt, isServiceOf, and related service-node triples for this module.
+        print(
+            f"TODO cleanup required for runtime service triples of module {self.module_id} (service node: {self.service_instance_iri})"
+        )
 
     def _handle_receive(self, box_iri: IRI) -> None:
         """
@@ -202,9 +224,22 @@ class FlexConveyor:
         This is a workflow that can be triggered via the REST API.
         """
 
-    def build_adjacency_matrix(self):
-        """Build adjacency map: {module_iri: [(connectsTo, hasDirection), ...]}."""
-        adj: dict[str, list[tuple[str | None, str | None]]] = {}
+    @staticmethod
+    def _direction_to_index(direction: str | None) -> int | None:
+        if not direction:
+            return None
+        direction_map = {
+            "http://w3id.org/circularfactory/FlexConveyor#North": 1,
+            "http://w3id.org/circularfactory/FlexConveyor#East": 2,
+            "http://w3id.org/circularfactory/FlexConveyor#South": 3,
+            "http://w3id.org/circularfactory/FlexConveyor#West": 4,
+        }
+        return direction_map.get(str(direction))
+
+    def discover_connections_and_services(self):
+        """Build directional rows: [module, North, East, South, West]."""
+        adj_map: dict[IRI, list[tuple[IRI | None, str | None]]] = {}
+        accessible_at_map: dict[IRI, str | None] = {}
 
         rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
         module_class = IRI(
@@ -218,6 +253,13 @@ class FlexConveyor:
         has_direction = IRI(
             "http://w3id.org/circularfactory/FlexConveyor#hasDirection"
         )
+        has_service = IRI(
+            "http://w3id.org/circularfactory/FlexConveyor#hasService"
+        )
+        accessible_at = IRI(
+            "http://w3id.org/circularfactory/FlexConveyor#accessibleAt"
+        )
+        
 
         triples = self.ogm.db.triples_get(pred=rdf_type, obj=module_class)
         modules = [triple[0] for triple in triples]
@@ -225,12 +267,15 @@ class FlexConveyor:
         property_chains = [
             [has_connection, connects_to],
             [has_connection, has_direction],
+            [has_service, accessible_at],
         ]
         class_scope = ClassScope.from_property_chains(property_chains)
 
         has_connection_key = has_connection.lined
         connects_to_key = connects_to.lined
         has_direction_key = has_direction.lined
+        has_service_key = has_service.lined
+        accessible_at_key = accessible_at.lined
 
         for module_iri in modules:
             module_instance = self.ogm.fetch(
@@ -249,7 +294,7 @@ class FlexConveyor:
                 module_data = {}
 
             connections = module_data.get(has_connection_key, [])
-            adjacency_entries: list[tuple[str | None, str | None]] = []
+            adjacency_entries: list[tuple[IRI | None, str | None]] = []
 
             for connection in connections:
                 if not isinstance(connection, dict):
@@ -258,13 +303,14 @@ class FlexConveyor:
                 connects_to_list = connection.get(connects_to_key, [])
                 direction_list = connection.get(has_direction_key, [])
 
-                target: str | None = None
+                target: IRI | None = None
                 if connects_to_list:
                     first_target = connects_to_list[0]
                     if isinstance(first_target, dict):
-                        target = first_target.get("id")
+                        target_id = first_target.get("id")
+                        target = IRI(str(target_id)) if target_id else None
                     else:
-                        target = str(first_target)
+                        target = IRI(str(first_target))
 
                 direction: str | None = None
                 if direction_list:
@@ -276,9 +322,45 @@ class FlexConveyor:
 
                 adjacency_entries.append((target, direction))
 
-            adj[str(module_iri)] = adjacency_entries
+            module_key = module_iri if isinstance(module_iri, IRI) else IRI(str(module_iri))
+            adj_map[module_key] = adjacency_entries
 
-        return adj
+            services = module_data.get(has_service_key, [])
+            module_accessible_at: str | None = None
+            if isinstance(services, list):
+                for service in services:
+                    if not isinstance(service, dict):
+                        continue
+                    locations = service.get(accessible_at_key, [])
+                    if not locations:
+                        continue
+                    first_location = locations[0]
+                    if isinstance(first_location, dict):
+                        location_id = first_location.get("id")
+                        module_accessible_at = str(location_id) if location_id else None
+                    else:
+                        module_accessible_at = str(first_location)
+                    if module_accessible_at:
+                        break
+
+            accessible_at_map[module_key] = module_accessible_at
+
+        directional_rows: list[list[IRI | int]] = []
+        for module_iri in sorted(adj_map.keys(), key=str):
+            row: list[IRI | int] = [module_iri, 0, 0, 0, 0]
+            for target, direction in adj_map[module_iri]:
+                if not target:
+                    continue
+                index = self._direction_to_index(direction)
+                if index is None:
+                    continue
+                if row[index] == 0:
+                    row[index] = target
+            directional_rows.append(row)
+
+        self.adj = directional_rows
+        self.accessible_at_by_module = accessible_at_map
+        return self.adj
 
 
     def receive(

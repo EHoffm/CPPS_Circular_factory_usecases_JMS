@@ -9,7 +9,10 @@ import os
 import importlib
 import subprocess
 import sys
+from io import BytesIO
 from pathlib import Path
+
+import matplotlib.pyplot as plt
 
 import streamlit as st
 
@@ -146,10 +149,14 @@ else:
     else:
         st.warning("✅ Connected to GraphDB - OGM not initialized")
 
-    # Navigation tabs
-    tab1, tab2, tab3 = st.tabs(["🏗️ Bootstrap", "📊 Monitor", "🎮 Control"])
+    section = st.radio(
+        "Section",
+        options=["🏗️ Bootstrap", "📊 Monitor", "🎮 Control"],
+        horizontal=True,
+        key="main_section_selector",
+    )
 
-    with tab1:
+    if section == "🏗️ Bootstrap":
         st.header("System Bootstrapping")
 
         if not is_ogm_initialized():
@@ -163,12 +170,16 @@ else:
                     st.error("Failed to clear knowledge graph.")
             render_flex_module_instantiation(ogm)
 
-    with tab2:
+    elif section == "📊 Monitor":
         st.header("Runtime Monitoring")
         if "discovered_modules" not in st.session_state:
             st.session_state.discovered_modules = []
         if "adjacency_matrix" not in st.session_state:
             st.session_state.adjacency_matrix = {}
+        if "directional_rows" not in st.session_state:
+            st.session_state.directional_rows = []
+        if "topology_image_png" not in st.session_state:
+            st.session_state.topology_image_png = None
 
         action_col1, action_col2 = st.columns(2)
 
@@ -176,7 +187,6 @@ else:
             "discover instantiated modules", key="discover_instantiated_modules"
         ):
             monitor_module = importlib.import_module("utils.system_state_monitor")
-            monitor_module = importlib.reload(monitor_module)
             st.session_state.discovered_modules = monitor_module.discover_modules(
                 st.session_state.get("ogm")
             )
@@ -185,15 +195,61 @@ else:
             "build adjacency matrix", key="build_adjacency_matrix"
         ):
             monitor_module = importlib.import_module("utils.system_state_monitor")
-            monitor_module = importlib.reload(monitor_module)
             st.session_state.adjacency_matrix = monitor_module.build_adjacency_matrix(
                 st.session_state.get("ogm")
             )
 
-        if st.session_state.adjacency_matrix:
-            st.subheader("Adjacency Matrix")
-            st.json(st.session_state.adjacency_matrix)
+            topology_module = importlib.import_module("utils.topology_renderer")
+            st.session_state.directional_rows = (
+                topology_module.adjacency_map_to_directional_rows(
+                    st.session_state.adjacency_matrix
+                )
+            )
 
+            topology_figure = topology_module.directional_rows_to_figure(
+                st.session_state.directional_rows
+            )
+            image_buffer = BytesIO()
+            topology_figure.savefig(
+                image_buffer,
+                format="png",
+                dpi=120,
+                bbox_inches="tight",
+                pad_inches=0.02,
+                transparent=True,
+            )
+            st.session_state.topology_image_png = image_buffer.getvalue()
+            image_buffer.close()
+            plt.close(topology_figure)
+
+        if st.session_state.adjacency_matrix:
+            st.subheader("System Topology")
+
+            if st.session_state.topology_image_png:
+                left_col, center_col, right_col = st.columns([0.2, 0.6, 0.2])
+                with center_col:
+                    st.image(st.session_state.topology_image_png, use_container_width=True)
+
+            if st.session_state.directional_rows:
+                st.caption("Adjacency Matrix ")
+
+                def _display_value(value):
+                    if value == 0 or value is None:
+                        return None
+                    return str(value)
+
+                topology_table = [
+                    {
+                        "module": _display_value(row[0]),
+                        "North": _display_value(row[1]),
+                        "East": _display_value(row[2]),
+                        "South": _display_value(row[3]),
+                        "West": _display_value(row[4]),
+                    }
+                    for row in st.session_state.directional_rows
+                ]
+                st.dataframe(topology_table, use_container_width=True)
+           
         button_columns = st.columns(4)
         for index, discovered_module in enumerate(st.session_state.discovered_modules):
             module_id = discovered_module.get("module_id", "unknown module")
@@ -215,7 +271,7 @@ else:
 
         st.info("Coming soon: Real-time system visualization")
 
-    with tab3:
+    else:
         st.header("Runtime Control")
         st.info("Coming soon: Simulation and box injection controls")
 

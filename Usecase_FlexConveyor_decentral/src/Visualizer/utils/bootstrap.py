@@ -4,6 +4,7 @@ import json
 import sys
 import os
 import importlib
+import time
 import atexit
 import signal
 import threading
@@ -148,6 +149,7 @@ def instantiate_modules(
                 print(f"  → Initializing middleware...")
                 flex_module = FlexConveyor(node.id, ogm=ogm, host=host)
                 print(f"  ✓ Middleware initialized")
+                time.sleep(1)
 
                 # Start the REST API server
                 print(f"  → Starting REST API server...")
