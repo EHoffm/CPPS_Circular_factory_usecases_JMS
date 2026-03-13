@@ -1,4 +1,4 @@
-from graph_db_interface import GraphDB
+from graph_db_interface import GraphDB, GraphDBCredentials
 import json
 import heapq
 import logging
@@ -33,12 +33,13 @@ class FlexConveyorSystem:
         Fetch datamodel for Flexconveyor and configure connections accordingly
         """
         self.system_iri = system_iri
-        self.db = GraphDB(
-            base_url="http://172.22.223.165:7200/",
-            username="admin",
-            password="qqq",
-            repository="JMS_Usecase_2",
+        credentials = GraphDBCredentials(
+            base_url="https://graphdb.iam-mms.kit.edu",
+            username="yousefa",
+            password="{E9!6tj§q2=yeb!p",
+            repository="Playground",
         )
+        self.db = GraphDB(credentials=credentials)
         self.parcels = {}
 
         self.build_adjacency_matrix()

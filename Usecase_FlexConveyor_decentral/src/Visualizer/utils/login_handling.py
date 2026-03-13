@@ -8,7 +8,7 @@ import streamlit as st
 from graph_db_interface.utils.graph_db_credentials import GraphDBCredentials
 from graph_db_interface import GraphDB
 from graph_db_interface.utils.iri import IRI
-from circular_factory_ogm import OGM
+from kapps_ogm import OGM
 
 
 def initialize_login_session_state():

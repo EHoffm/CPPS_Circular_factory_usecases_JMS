@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from circular_factory_ogm.ogm import OGM
-from circular_factory_ogm.utils.class_scope import ClassScope
+from kapps_ogm.ogm import OGM
+from kapps_ogm.utils.class_scope import ClassScope
 from graph_db_interface import IRI, GraphDB
 
 

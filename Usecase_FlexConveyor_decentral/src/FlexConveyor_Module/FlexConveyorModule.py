@@ -1,13 +1,17 @@
+import heapq
+import json
 import threading
 import time
-from pprint import pformat
-from typing import Optional
+from typing import Optional, Any, Dict
+
+import requests
 import uvicorn
 import aas_middleware as aas
 from graph_db_interface.utils.iri import IRI
 
-from circular_factory_ogm.ogm import OGM
-from circular_factory_ogm.utils.class_scope import ClassScope
+from kapps_ogm.ogm import OGM
+from kapps_ogm.utils.class_scope import ClassScope
+from aas_middleware.model.util import convert_camel_case_to_underscrore_str, get_id_with_patch
 
 
 class FlexConveyor:
@@ -35,15 +39,7 @@ class FlexConveyor:
     def __init__(
         self, module_id: IRI, ogm: Optional[OGM] = None, host: str = "0.0.0.0"
     ):
-        """
-        Initialize a FlexConveyor module.
-
-        Args:
-            module_id: IRI identifier for this module
-            ogm: OGM instance for accessing the knowledge graph (required for fetching module data)
-            host: Host to bind the REST API server to (default: 0.0.0.0 for all interfaces)
-                  Use "localhost" for local-only access
-        """
+        """Initialize one module service."""
         if ogm is None:
             raise ValueError(
                 "OGM instance is required to initialize FlexConveyor module"
@@ -82,29 +78,73 @@ class FlexConveyor:
             instance_iri=self.module_id, class_scope=class_scope, materialize=True
         )
 
-        self.mw.load_data_model(
-            name=str(self.module_id),
-            data_model=aas.DataModel.from_models(data_node.instance),
-            persist_instances=True,
-        )
-        self.mw.generate_rest_api_for_data_model(str(self.module_id))
+        # OGM-generated dynamic Pydantic models can have field annotations
+        # that are incompatible with aas_middleware's schema introspection
+        # (issubclass checks). Fall back to manual DataModel population.
+        try:
+            self.mw.load_data_model(
+                name=str(self.module_id),
+                data_model=aas.DataModel.from_models(data_node.instance),
+                persist_instances=True,
+            )
+        except TypeError as e:
+            if "issubclass" in str(e):
+                print(f"  ⚠️  Schema introspection failed, using simplified fallback")
+                data_model = aas.DataModel()
+                model_id = get_id_with_patch(data_node.instance)
+                data_model._key_ids_models[model_id] = data_node.instance
+                type_name = type(data_node.instance).__name__.split(".")[-1]
+                data_model._models_key_type.setdefault(type_name, []).append(model_id)
+                data_model._schemas[type_name] = type(data_node.instance)
+                underscore_name = convert_camel_case_to_underscrore_str(type_name)
+                data_model._top_level_models.setdefault(underscore_name, []).append(model_id)
+                data_model._top_level_schemas.add(type_name)
+                self.mw.load_data_model(
+                    name=str(self.module_id),
+                    data_model=data_model,
+                    persist_instances=True,
+                )
+            else:
+                raise
 
-        def receive(box_iri: str) -> None:
-            self.receive(box_iri)
+        try:
+            self.mw.generate_rest_api_for_data_model(str(self.module_id))
+        except TypeError as e:
+            if "issubclass" in str(e):
+                print(f"  ⚠️  REST API generation limited (schema introspection issue)")
+            else:
+                raise
+
+        def receive(arg: str | None = None) -> dict:
+            if not arg:
+                return {
+                    "status": "error",
+                    "error": "Missing required workflow query parameter: arg",
+                }
+
+            box_iri, destination_iri = arg, None
+            try:
+                parsed = json.loads(arg)
+                if isinstance(parsed, dict):
+                    box_iri = parsed.get("box_iri") or parsed.get("box") or box_iri
+                    destination_iri = parsed.get("destination_iri") or parsed.get("destination")
+            except Exception:
+                pass
+
+            return self.receive(str(box_iri), str(destination_iri) if destination_iri else None)
+
+        def has_parcel() -> dict:
+            return self.has_parcel()
 
         self.mw.workflow()(receive)
+        self.mw.workflow()(has_parcel)
 
         print(f"✓ FlexConveyor module initialized: {self.module_id}")
         print(f"  Assigned port: {self.port}")
         print(f"  Host: {self.host}")
 
     def start(self):
-        """
-        Start the REST API server in a background thread.
-
-        The server will be accessible at the URL printed to stdout.
-        Call stop() to shut down the server.
-        """
+        """Start the REST API server in a background thread."""
         if self.running:
             print(f"⚠ Module {self.module_id} is already running at {self.url}")
             return
@@ -136,9 +176,7 @@ class FlexConveyor:
         print(f"{'='*70}\n")
         
         self._register_service_in_knowledge_graph()
-        adjacency_matrix = self.discover_connections_and_services()
-        print("Adjacency matrix:")
-        print(pformat(adjacency_matrix))
+
         
 
 
@@ -177,7 +215,7 @@ class FlexConveyor:
         print(f"✓ FlexConveyor {self.module_id} stopped")
 
     def _register_service_in_knowledge_graph(self) -> None:
-        """Create or update runtime service information in the knowledge graph."""
+        """Create runtime service triples for this module."""
         service_property_chains = [
             [
                 IRI("http://w3id.org/circularfactory/FlexConveyor#isServiceOf"),
@@ -205,6 +243,15 @@ class FlexConveyor:
             named_graph=IRI("http://w3id.org/circularfactory/FlexConveyorInstances"),
         )
         self.service_instance_iri = service_node.id
+        try:
+            has_service = IRI("http://w3id.org/circularfactory/FlexConveyor#hasService")
+            self.ogm.db.triples_add(
+                [(self.module_id, has_service, self.service_instance_iri)],
+                check_exist=False,
+                named_graph=IRI("http://w3id.org/circularfactory/FlexConveyorInstances"),
+            )
+        except Exception as e:
+            print(f"  ⚠️  Could not link module to service node via hasService: {e}")
         print(f"✓ Registered service in knowledge graph with IRI: {service_node.id}")
 
     def _cleanup_service_in_knowledge_graph(self) -> None:
@@ -217,12 +264,25 @@ class FlexConveyor:
             f"TODO cleanup required for runtime service triples of module {self.module_id} (service node: {self.service_instance_iri})"
         )
 
-    def _handle_receive(self, box_iri: IRI) -> None:
-        """
-        Receive a box on the conveyor.
+    def has_parcel(self) -> dict:
+        """Return whether this module currently has a box."""
+        FC = "http://w3id.org/circularfactory/FlexConveyor#"
+        has_possession = IRI(f"{FC}hasPossession")
 
-        This is a workflow that can be triggered via the REST API.
-        """
+        possession_triples = self.ogm.db.triples_get(
+            sub=self.module_id, pred=has_possession
+        )
+
+        boxes = [str(t[2]) for t in possession_triples] if possession_triples else []
+        result = {
+            "module": str(self.module_id),
+            "has_parcel": bool(boxes),
+            "boxes": boxes,
+            "count": len(boxes),
+        }
+
+        print(f"📊 [{self.module_id}] has_parcel={bool(boxes)}, boxes={boxes}")
+        return result
 
     @staticmethod
     def _direction_to_index(direction: str | None) -> int | None:
@@ -241,110 +301,94 @@ class FlexConveyor:
         adj_map: dict[IRI, list[tuple[IRI | None, str | None]]] = {}
         accessible_at_map: dict[IRI, str | None] = {}
 
-        rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-        module_class = IRI(
-            "http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule"
-        )
+        try:
+            # IMPORTANT: `triples_get` cannot retrieve *all* triples (it requires a filter).
+            # We therefore query the named graph once via SPARQL and then resolve BNodes
+            # offline by indexing results by subject-string.
+            instances_graph = "http://w3id.org/circularfactory/FlexConveyorInstances"
+            query = (
+                "SELECT ?s ?p ?o WHERE { "
+                f"GRAPH <{instances_graph}> {{ ?s ?p ?o . }} "
+                "}"
+            )
+            res = self.ogm.db.query(query=query, convert_bindings=True)
+            bindings = (res or {}).get("results", {}).get("bindings", [])
+            all_triples = [(b["s"], b["p"], b["o"]) for b in bindings]
 
-        has_connection = IRI(
-            "http://w3id.org/circularfactory/FlexConveyor#hasConnection"
-        )
-        connects_to = IRI("http://w3id.org/circularfactory/FlexConveyor#connectsTo")
-        has_direction = IRI(
-            "http://w3id.org/circularfactory/FlexConveyor#hasDirection"
-        )
-        has_service = IRI(
-            "http://w3id.org/circularfactory/FlexConveyor#hasService"
-        )
-        accessible_at = IRI(
-            "http://w3id.org/circularfactory/FlexConveyor#accessibleAt"
-        )
-        
+            triples_by_subject: dict[str, list[tuple[Any, Any, Any]]] = {}
+            for s, p, o in all_triples:
+                triples_by_subject.setdefault(str(s), []).append((s, p, o))
 
-        triples = self.ogm.db.triples_get(pred=rdf_type, obj=module_class)
-        modules = [triple[0] for triple in triples]
+            rdf_type = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+            module_class = "http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule"
 
-        property_chains = [
-            [has_connection, connects_to],
-            [has_connection, has_direction],
-            [has_service, accessible_at],
-        ]
-        class_scope = ClassScope.from_property_chains(property_chains)
+            # Find all modules by rdf:type
+            modules: set[Any] = set()
+            for s, p, o in all_triples:
+                if str(p) == rdf_type and str(o) == module_class:
+                    modules.add(s)
+            
+            for module_iri in modules:
+                module_key = module_iri if isinstance(module_iri, IRI) else IRI(str(module_iri))
+                adj_map[module_key] = []
+                accessible_at_map[module_key] = None
 
-        has_connection_key = has_connection.lined
-        connects_to_key = connects_to.lined
-        has_direction_key = has_direction.lined
-        has_service_key = has_service.lined
-        accessible_at_key = accessible_at.lined
+            for module_iri in modules:
+                module_key = module_iri if isinstance(module_iri, IRI) else IRI(str(module_iri))
+                module_triples = triples_by_subject.get(str(module_iri), [])
 
-        for module_iri in modules:
-            module_instance = self.ogm.fetch(
-                instance_iri=module_iri,
-                class_scope=class_scope,
-                materialize=True,
-            ).instance
+                # Preferred: module -> hasService -> serviceNode -> accessibleAt
+                # Fallback: serviceNode -> isServiceOf -> module (inverse lookup)
+                service_nodes: list[str] = []
+                for _s, pred, obj in module_triples:
+                    if "hasservice" in str(pred).lower():
+                        service_nodes.append(str(obj))
 
-            if isinstance(module_instance, dict):
-                module_data = module_instance
-            elif hasattr(module_instance, "model_dump"):
-                module_data = module_instance.model_dump(by_alias=True)
-            elif hasattr(module_instance, "dict"):
-                module_data = module_instance.dict()
-            else:
-                module_data = {}
+                if not service_nodes:
+                    for s, p, o in all_triples:
+                        if str(o) == str(module_iri) and "isserviceof" in str(p).lower():
+                            service_nodes.append(str(s))
 
-            connections = module_data.get(has_connection_key, [])
-            adjacency_entries: list[tuple[IRI | None, str | None]] = []
-
-            for connection in connections:
-                if not isinstance(connection, dict):
-                    continue
-
-                connects_to_list = connection.get(connects_to_key, [])
-                direction_list = connection.get(has_direction_key, [])
-
-                target: IRI | None = None
-                if connects_to_list:
-                    first_target = connects_to_list[0]
-                    if isinstance(first_target, dict):
-                        target_id = first_target.get("id")
-                        target = IRI(str(target_id)) if target_id else None
-                    else:
-                        target = IRI(str(first_target))
-
-                direction: str | None = None
-                if direction_list:
-                    first_direction = direction_list[0]
-                    if isinstance(first_direction, dict):
-                        direction = first_direction.get("id")
-                    else:
-                        direction = str(first_direction)
-
-                adjacency_entries.append((target, direction))
-
-            module_key = module_iri if isinstance(module_iri, IRI) else IRI(str(module_iri))
-            adj_map[module_key] = adjacency_entries
-
-            services = module_data.get(has_service_key, [])
-            module_accessible_at: str | None = None
-            if isinstance(services, list):
-                for service in services:
-                    if not isinstance(service, dict):
-                        continue
-                    locations = service.get(accessible_at_key, [])
-                    if not locations:
-                        continue
-                    first_location = locations[0]
-                    if isinstance(first_location, dict):
-                        location_id = first_location.get("id")
-                        module_accessible_at = str(location_id) if location_id else None
-                    else:
-                        module_accessible_at = str(first_location)
-                    if module_accessible_at:
+                for service_node_str in service_nodes:
+                    service_triples = triples_by_subject.get(service_node_str, [])
+                    for _ss, s_pred, s_obj in service_triples:
+                        if "accessibleat" in str(s_pred).lower():
+                            accessible_at_map[module_key] = str(s_obj)
+                            break
+                    if accessible_at_map.get(module_key):
                         break
 
-            accessible_at_map[module_key] = module_accessible_at
+                for _s, pred, obj in module_triples:
+                    pred_str = str(pred).lower()
 
+                    # Connections
+                    if "hasconnection" in pred_str:
+                        connection_node_str = str(obj)
+                        conn_triples = triples_by_subject.get(connection_node_str, [])
+                        target: Any = None
+                        direction: str | None = None
+
+                        for _cs, c_pred, c_obj in conn_triples:
+                            c_pred_str = str(c_pred).lower()
+                            if "connectsto" in c_pred_str:
+                                target = c_obj
+                            elif "hasdirection" in c_pred_str:
+                                direction = str(c_obj)
+
+                        if target is not None:
+                            target_iri = target if isinstance(target, IRI) else IRI(str(target))
+                            adj_map[module_key].append((target_iri, direction))
+
+                    # Service URL discovery is handled above.
+                    elif "hasservice" in pred_str or "isserviceof" in pred_str or "accessibleat" in pred_str:
+                        continue
+
+        except Exception as e:
+            import traceback
+            print(f"Exception parsing triples: {e}")
+            traceback.print_exc()
+
+        # Build directional rows
         directional_rows: list[list[IRI | int]] = []
         for module_iri in sorted(adj_map.keys(), key=str):
             row: list[IRI | int] = [module_iri, 0, 0, 0, 0]
@@ -363,11 +407,336 @@ class FlexConveyor:
         return self.adj
 
 
-    def receive(
-        self,
-        box_iri: IRI,
-    ) -> None:
-        print(f"📦 [{self.module_id}] Received box: {box_iri}")
+    # ------------------------------------------------------------------
+    #  Topology helpers
+    # ------------------------------------------------------------------
+
+    def _build_topology_graph(self) -> Dict[str, list]:
+        """Build an undirected adjacency list from directional rows."""
+        graph: Dict[str, list] = {}
+
+        # First pass: ensure all modules are in the graph
+        for row in self.adj:
+            module = str(row[0])
+            if module not in graph:
+                graph[module] = []
+
+        # Second pass: add all connections
+        for row in self.adj:
+            module = str(row[0])
+
+            for i in range(1, 5):  # Indices 1-4: North, East, South, West
+                neighbor = row[i]
+                if neighbor != 0 and neighbor is not None:
+                    neighbor_str = str(neighbor)
+                    # Add bidirectional edges
+                    if neighbor_str not in graph[module]:
+                        graph[module].append(neighbor_str)
+                    if neighbor_str not in graph:
+                        graph[neighbor_str] = []
+                    if module not in graph[neighbor_str]:
+                        graph[neighbor_str].append(module)
+
+        return graph
+
+    def _dijkstra_shortest_path(self, source: str, target: str) -> list:
+        """Return shortest module path from source to target (unit weights)."""
+        graph = self._build_topology_graph()
+
+        if source not in graph or target not in graph:
+            return []
+
+        distances: Dict[str, float] = {node: float("inf") for node in graph}
+        distances[source] = 0.0
+        previous: Dict[str, Optional[str]] = {node: None for node in graph}
+        visited: set = set()
+        pq: list = [(0.0, source)]  # (distance, node)
+
+        while pq:
+            current_dist, current = heapq.heappop(pq)
+
+            if current in visited:
+                continue
+            visited.add(current)
+
+            if current == target:
+                break
+
+            for neighbor in graph.get(current, []):
+                if neighbor in visited:
+                    continue
+                new_dist = current_dist + 1.0
+                if new_dist < distances[neighbor]:
+                    distances[neighbor] = new_dist
+                    previous[neighbor] = current
+                    heapq.heappush(pq, (new_dist, neighbor))
+
+        # Reconstruct path
+        if distances[target] == float("inf"):
+            return []
+
+        path: list = []
+        node: Optional[str] = target
+        while node is not None:
+            path.append(node)
+            node = previous[node]
+        path.reverse()
+
+        return path
+
+    # ------------------------------------------------------------------
+    #  Core workflows
+    # ------------------------------------------------------------------
+
+    def receive(self, box_iri: str, destination_iri: str | None = None) -> dict:
+        """Receive a box at this module.
+
+        1. Ensures the box exists in GraphDB.
+        2. Transfers ``hasPossession`` / ``isPossessedBy`` to this module
+           (removes from any previous owner).
+        3. Updates the box state to *InTransit* (or *Delivered* if this is
+           the destination).
+        4. If not at destination, triggers :meth:`route_box` to forward the
+           box along the shortest path.
+
+
+        Args:
+            box_iri: IRI string of the box being received.
+            destination_iri: Optional IRI string of the destination module.
+
+        Returns:
+            dict describing the outcome (delivered / routed / received_no_destination).
+        """
+        FC = "http://w3id.org/circularfactory/FlexConveyor#"
+        INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
+        named_graph = IRI(INST)
+
+        box = IRI(box_iri) if not isinstance(box_iri, IRI) else box_iri
+
+        has_possession = IRI(f"{FC}hasPossession")
+        is_possessed_by = IRI(f"{FC}isPossessedBy")
+        has_state_prop = IRI(f"{FC}hasState")
+        has_destination = IRI(f"{FC}hasDestination")
+        has_origin = IRI(f"{FC}hasOrigin")
+        in_transit = IRI(f"{FC}InTransit")
+        delivered = IRI(f"{FC}Delivered")
+        rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+        box_class = IRI(f"{FC}Box")
+
+        destination_arg = (
+            IRI(destination_iri)
+            if destination_iri is not None and not isinstance(destination_iri, IRI)
+            else destination_iri
+        )
+
+        print(
+            f"\n📦 [{self.module_id}] Receiving box: {box}"
+            + (f" (destination override: {destination_arg})" if destination_arg else "")
+        )
+
+        # 1. Ensure the box exists in GraphDB
+        existing = self.ogm.db.triples_get(sub=box, pred=rdf_type, obj=box_class)
+        if not existing:
+            self.ogm.db.triples_add(
+                [(box, rdf_type, box_class)],
+                check_exist=False,
+                named_graph=named_graph,
+            )
+            print(f"  → Created box {box} in knowledge graph")
+
+        # Optional injection behavior: upsert destination (and origin if missing).
+        if destination_arg is not None:
+            old_destinations = self.ogm.db.triples_get(sub=box, pred=has_destination)
+            if old_destinations:
+                self.ogm.db.triples_delete(
+                    old_destinations, check_exist=False, named_graph=named_graph
+                )
+            self.ogm.db.triples_add(
+                [(box, has_destination, destination_arg)],
+                check_exist=False,
+                named_graph=named_graph,
+            )
+
+            origin_triples = self.ogm.db.triples_get(sub=box, pred=has_origin)
+            if not origin_triples:
+                self.ogm.db.triples_add(
+                    [(box, has_origin, self.module_id)],
+                    check_exist=False,
+                    named_graph=named_graph,
+                )
+
+        # 2. Remove box from any previous module's hasPossession
+        old_possessions = self.ogm.db.triples_get(pred=has_possession, obj=box)
+        if old_possessions:
+            self.ogm.db.triples_delete(
+                old_possessions, check_exist=False, named_graph=named_graph
+            )
+            old_owners = [str(t[0]) for t in old_possessions]
+            print(f"  → Removed box from previous owner(s): {old_owners}")
+
+        # Remove old isPossessedBy
+        old_possessed = self.ogm.db.triples_get(sub=box, pred=is_possessed_by)
+        if old_possessed:
+            self.ogm.db.triples_delete(
+                old_possessed, check_exist=False, named_graph=named_graph
+            )
+
+        # 3. Add this module as the new possessor
+        self.ogm.db.triples_add(
+            [
+                (self.module_id, has_possession, box),
+                (box, is_possessed_by, self.module_id),
+            ],
+            check_exist=False,
+            named_graph=named_graph,
+        )
+        print(f"  → Box is now at module {self.module_id}")
+
+        # 4. Update box state — remove old state first
+        old_states = self.ogm.db.triples_get(sub=box, pred=has_state_prop)
+        if old_states:
+            self.ogm.db.triples_delete(
+                old_states, check_exist=False, named_graph=named_graph
+            )
+
+        # 5. Check if this module is the destination
+        dest_triples = self.ogm.db.triples_get(sub=box, pred=has_destination)
+        destination = dest_triples[0][2] if dest_triples else None
+
+        if destination and str(destination) == str(self.module_id):
+            # Box has arrived at its final destination
+            self.ogm.db.triples_add(
+                [(box, has_state_prop, delivered)],
+                check_exist=False,
+                named_graph=named_graph,
+            )
+            print(f"  ✅ Box {box} DELIVERED to destination {self.module_id}!")
+            return {
+                "status": "delivered",
+                "module": str(self.module_id),
+                "box": str(box),
+            }
+
+        # Box is in transit
+        self.ogm.db.triples_add(
+            [(box, has_state_prop, in_transit)],
+            check_exist=False,
+            named_graph=named_graph,
+        )
+        print(f"  📍 Box {box} is now IN TRANSIT at {self.module_id}")
+
+        # 6. Trigger routing to forward the box towards its destination
+        if destination:
+            print(f"  🔄 Routing box towards destination: {destination}")
+            routing_result = self.route_box(str(box), str(destination))
+            return {
+                "status": "routed",
+                "module": str(self.module_id),
+                "box": str(box),
+                "destination": str(destination),
+                "routing": routing_result,
+            }
+
+        print(f"  ⚠️  No destination set for box {box} — box will stay here")
+        return {
+            "status": "received_no_destination",
+            "module": str(self.module_id),
+            "box": str(box),
+        }
+
+    def route_box(self, box_iri: str, destination_iri: str) -> dict:
+        """Route a box to its destination using Dijkstra's shortest path."""
+        try:
+            source = str(self.module_id)
+            target = destination_iri
+
+            print(f"\n🗺️  [{self.module_id}] Computing route: {source} → {target}")
+
+            # Always refresh topology: at startup, modules are instantiated sequentially,
+            # so early-started modules may have built a partial adjacency matrix.
+            self.discover_connections_and_services()
+
+            path = self._dijkstra_shortest_path(source, target)
+
+            if not path:
+                print(f"  ❌ No route found from {source} to {target}")
+                return {
+                    "status": "no_route",
+                    "source": source,
+                    "destination": target,
+                    "path": [],
+                    "internal_adj": [[str(x) for x in r] for r in self.adj]
+                }
+
+            if len(path) < 2:
+                # Already at destination (shouldn't normally happen — receive handles it)
+                print("  ✅ Already at destination")
+                return {
+                    "status": "already_at_destination",
+                    "source": source,
+                    "destination": target,
+                    "path": path,
+                }
+
+            print(f"  📍 Route: {' → '.join(path)}")
+
+            next_hop = path[1]
+            next_hop_iri = IRI(next_hop)
+
+            # Find the URL of the next module's REST API
+            next_url = self.accessible_at_by_module.get(next_hop_iri)
+
+            if not next_url:
+                print(f"  ❌ No accessible URL for next hop: {next_hop}")
+                return {
+                    "status": "next_hop_unreachable",
+                    "next_hop": next_hop,
+                    "path": path,
+                }
+
+            # Forward the box to the next module by calling its receive workflow.
+            # aas_middleware exposes workflows under /workflows/<name>/execute and
+            # passes positional args via the `arg` query parameter.
+            receive_workflow_url = f"{next_url}/workflows/receive/execute"
+            print(f"  📡 Forwarding box to {next_hop} via {receive_workflow_url}")
+
+            response = requests.post(
+                receive_workflow_url,
+                # Query-param based workflow invocation (single-arg workflow).
+                params={"arg": box_iri},
+                timeout=30,
+            )
+
+            if response.status_code >= 400:
+                # Include body to make downstream errors debuggable.
+                return {
+                    "status": "downstream_error",
+                    "next_hop": next_hop,
+                    "full_path": path,
+                    "http_status": response.status_code,
+                    "http_text": response.text,
+                    "receive_url": receive_workflow_url,
+                }
+
+            result = response.json() if response.text else {"status": "ok"}
+
+            print(f"  ✅ Box forwarded successfully to {next_hop}")
+            return {
+                "status": "forwarded",
+                "next_hop": next_hop,
+                "full_path": path,
+                "hops_remaining": len(path) - 2,
+                "response": result,
+            }
+        except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            print(f"  ❌ Internal Error in route_box: {e}\n{error_trace}")
+            return {
+                "status": "error",
+                "error": str(e),
+                "traceback": error_trace
+            }
 
     def get_api_url(self) -> Optional[str]:
         """Get the URL where this module's REST API is accessible."""

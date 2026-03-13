@@ -1,5 +1,5 @@
 from graph_db_interface import GraphDB, GraphDBCredentials, IRI
-from circular_factory_ogm.ogm import OGM
+from kapps_ogm.ogm import OGM
 import json
 
 from dotenv import load_dotenv

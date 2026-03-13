@@ -1,5 +1,5 @@
 from graph_db_interface import IRI, GraphDB, GraphDBCredentials
-from circular_factory_ogm.ogm import OGM
+from kapps_ogm.ogm import OGM
 import json
 import pandas as pd
 

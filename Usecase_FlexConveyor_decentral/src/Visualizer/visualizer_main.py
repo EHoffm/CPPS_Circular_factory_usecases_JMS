@@ -20,6 +20,7 @@ import streamlit as st
 def _bootstrap_import_paths() -> None:
     script_path = Path(__file__).resolve()
     package_dirs = (
+        "kapps_ogm",
         "circular_factory_ogm",
         "graph_db_interface",
         "aas_middleware_inf",

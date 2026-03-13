@@ -12,8 +12,8 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
 from graph_db_interface.utils.iri import IRI
-from circular_factory_ogm.utils.class_scope import ClassScope
-from circular_factory_ogm.ogm import OGM
+from kapps_ogm.utils.class_scope import ClassScope
+from kapps_ogm.ogm import OGM
 
 from .bootstrap import instantiate_modules
 
