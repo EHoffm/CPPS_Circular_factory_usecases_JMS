@@ -21,6 +21,104 @@ _running_modules_lock = threading.Lock()
 _shutdown_hooks_registered = False
 
 
+# Direction mappings for reverse connections
+_DIRECTION_OPPOSITES = {
+    "http://w3id.org/circularfactory/FlexConveyor#North": "http://w3id.org/circularfactory/FlexConveyor#South",
+    "http://w3id.org/circularfactory/FlexConveyor#South": "http://w3id.org/circularfactory/FlexConveyor#North",
+    "http://w3id.org/circularfactory/FlexConveyor#East": "http://w3id.org/circularfactory/FlexConveyor#West",
+    "http://w3id.org/circularfactory/FlexConveyor#West": "http://w3id.org/circularfactory/FlexConveyor#East",
+}
+
+
+def _create_bidirectional_connections(ogm: OGM, named_graph: IRI) -> None:
+    """Create reverse (bidirectional) connections for all module pairs.
+
+    After all modules are instantiated with their connections, this function
+    ensures that if Module A connects to Module B in direction D, then Module B
+    also has a connection back to Module A in the opposite direction (e.g., if
+    A connects to B to the East, B gets a connection to A to the West).
+    """
+
+    rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+    module_class = IRI("http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule")
+    has_connection = IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection")
+    connects_to = IRI("http://w3id.org/circularfactory/FlexConveyor#connectsTo")
+    has_direction = IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection")
+    base_namespace = "http://w3id.org/circularfactory/FlexConveyorInstances"
+
+    print("\n🔄 Creating bidirectional connections...")
+
+    triples = ogm.db.triples_get(pred=rdf_type, obj=module_class)
+    modules = [triple[0] for triple in triples]
+
+    if not modules:
+        print("  ⚠️  No modules found")
+        return
+
+    # Collect all existing connections
+    existing_connections: dict[tuple[str, str, str], set[tuple[str, str]]] = {}
+
+    for module_iri in modules:
+        connections = ogm.db.triples_get(sub=module_iri, pred=has_connection)
+        if not connections:
+            continue
+
+        for _s, _p, conn_node_iri in connections:
+            target_triples = ogm.db.triples_get(sub=conn_node_iri, pred=connects_to)
+            direction_triples = ogm.db.triples_get(sub=conn_node_iri, pred=has_direction)
+
+            for _s, _p, target_iri in target_triples:
+                for _s, _p, direction_iri in direction_triples:
+                    key = (str(module_iri), str(target_iri), str(direction_iri))
+                    existing_connections.setdefault(key, set()).add(
+                        (str(module_iri), str(conn_node_iri))
+                    )
+
+    # Now add reverse connections where missing
+    reverse_triples_to_add = []
+
+    for (src_module, dst_module, direction_str), _conn_data in existing_connections.items():
+        opposite_direction = _DIRECTION_OPPOSITES.get(direction_str)
+        if not opposite_direction:
+            continue
+
+        reverse_key = (dst_module, src_module, opposite_direction)
+
+        # Check if reverse connection already exists
+        if reverse_key not in existing_connections:
+            # Need to create reverse connection
+            src_iri = IRI(src_module)
+            dst_iri = IRI(dst_module)
+            opp_dir_iri = IRI(opposite_direction)
+
+            # Extract fragment parts to create a unique connection node ID
+            src_fragment = src_iri.fragment or str(src_iri).split("#")[-1]
+            dst_fragment = dst_iri.fragment or str(dst_iri).split("#")[-1]
+            
+            # Create a new connection node IRI with a valid format
+            conn_node_id = f"{base_namespace}#connection_{dst_fragment}_to_{src_fragment}"
+            conn_node_iri = IRI(conn_node_id)
+
+            reverse_triples_to_add.append((dst_iri, has_connection, conn_node_iri))
+            reverse_triples_to_add.append((conn_node_iri, connects_to, src_iri))
+            reverse_triples_to_add.append((conn_node_iri, has_direction, opp_dir_iri))
+
+            print(f"  → Adding: {dst_module} ←→ {src_module} ({opposite_direction})")
+
+    if reverse_triples_to_add:
+        try:
+            ogm.db.triples_add(
+                reverse_triples_to_add,
+                check_exist=False,
+                named_graph=named_graph,
+            )
+            print(f"  ✓ Added {len(reverse_triples_to_add) // 3} reverse connection(s)")
+        except Exception as e:
+            print(f"  ⚠️  Error adding reverse connections: {e}")
+    else:
+        print("  ✓ All connections are already bidirectional")
+
+
 def register_shutdown_handlers() -> None:
     """Register process-level shutdown handlers to stop all running modules."""
     global _shutdown_hooks_registered
@@ -259,6 +357,9 @@ def instantiate_modules(
                     "error": str(e),
                 }
                 results.append(result)
+
+        # After all modules are instantiated, ensure bidirectional connections
+        _create_bidirectional_connections(ogm, named_graph_iri)
 
         # Print summary
         print("\n" + "=" * 70)

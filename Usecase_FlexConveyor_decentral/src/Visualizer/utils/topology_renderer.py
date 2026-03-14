@@ -219,6 +219,23 @@ def _layout_nodes(nodes: list[FlexConveyorNode]) -> None:
             queueing.append(neighbor)
 
 
+def _compute_figure_geometry(nodes: list[FlexConveyorNode]):
+    """Compute figure size and axis limits based on node layout."""
+
+    min_x = min(node.x for node in nodes)
+    max_x = max(node.x for node in nodes)
+    min_y = min(node.y for node in nodes)
+    max_y = max(node.y for node in nodes)
+
+    padding = 100
+    width_range = max_x - min_x + 2 * padding
+    height_range = max_y - min_y + 2 * padding
+    fig_width = min(max(8, width_range / 80), 20)
+    fig_height = min(max(6, height_range / 80), 16)
+
+    return (min_x, max_x, min_y, max_y, padding, fig_width, fig_height)
+
+
 def directional_rows_to_figure(directional_rows: list[list[IRI | int]]):
     """Render a matplotlib topology figure from [module, up, right, down, left] rows."""
     nodes = _build_nodes_from_directional_rows(directional_rows)
@@ -231,16 +248,7 @@ def directional_rows_to_figure(directional_rows: list[list[IRI | int]]):
         ax.set_axis_off()
         return fig
 
-    min_x = min(node.x for node in nodes)
-    max_x = max(node.x for node in nodes)
-    min_y = min(node.y for node in nodes)
-    max_y = max(node.y for node in nodes)
-
-    padding = 100
-    width_range = max_x - min_x + 2 * padding
-    height_range = max_y - min_y + 2 * padding
-    fig_width = min(max(8, width_range / 80), 20)
-    fig_height = min(max(6, height_range / 80), 16)
+    min_x, max_x, min_y, max_y, padding, fig_width, fig_height = _compute_figure_geometry(nodes)
     fig.set_size_inches(fig_width, fig_height)
 
     for node in nodes:
@@ -262,6 +270,78 @@ def directional_rows_to_figure(directional_rows: list[list[IRI | int]]):
             fontsize=9,
             fontweight="bold",
         )
+
+    ax.set_xlim(min_x - padding, max_x + padding)
+    ax.set_ylim(min_y - padding, max_y + padding)
+    ax.set_aspect("equal")
+    ax.set_axis_off()
+
+    try:
+        fig.tight_layout()
+    except UserWarning:
+        fig.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.1)
+
+    return fig
+
+
+def directional_rows_to_figure_with_box(
+    directional_rows: list[list[IRI | int]],
+    box_module_iri: str | IRI | None,
+):
+    """Render topology with an overlaid brown box at the given module.
+
+    Uses the same layout and node rendering as `directional_rows_to_figure`
+    and draws an additional smaller rectangle centered on the selected
+    module to represent a moving box.
+    """
+
+    nodes = _build_nodes_from_directional_rows(directional_rows)
+    _layout_nodes(nodes)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    if not nodes:
+        ax.set_title("FlexConveyor Topology")
+        ax.set_axis_off()
+        return fig
+
+    min_x, max_x, min_y, max_y, padding, fig_width, fig_height = _compute_figure_geometry(nodes)
+    fig.set_size_inches(fig_width, fig_height)
+
+    box_module_str = str(box_module_iri) if box_module_iri is not None else None
+
+    for node in nodes:
+        rect = patches.Rectangle(
+            (node.x - 25, node.y - 25),
+            50,
+            50,
+            linewidth=2,
+            edgecolor="black",
+            facecolor="lightblue",
+        )
+        ax.add_patch(rect)
+        ax.text(
+            node.x,
+            node.y,
+            str(node.id.fragment),
+            ha="center",
+            va="center",
+            fontsize=9,
+            fontweight="bold",
+        )
+
+        if box_module_str is not None and str(node.id) == box_module_str:
+            # Draw a smaller brown box centered in the module to
+            # represent the moving parcel.
+            box_rect = patches.Rectangle(
+                (node.x - 10, node.y - 10),
+                20,
+                20,
+                linewidth=1.5,
+                edgecolor="saddlebrown",
+                facecolor="peru",
+            )
+            ax.add_patch(box_rect)
 
     ax.set_xlim(min_x - padding, max_x + padding)
     ax.set_ylim(min_y - padding, max_y + padding)

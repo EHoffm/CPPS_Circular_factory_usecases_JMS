@@ -8,6 +8,7 @@ import requests
 import uvicorn
 import aas_middleware as aas
 from graph_db_interface.utils.iri import IRI
+from pydantic import BaseModel
 
 from kapps_ogm.ogm import OGM
 from kapps_ogm.utils.class_scope import ClassScope
@@ -115,21 +116,17 @@ class FlexConveyor:
             else:
                 raise
 
-        def receive(arg: str | None = None) -> dict:
-            if not arg:
-                return {
-                    "status": "error",
-                    "error": "Missing required workflow query parameter: arg",
-                }
+        class ReceivePayload(BaseModel):
+            box_iri: str
+            destination_iri: str | None = None
 
-            box_iri, destination_iri = arg, None
-            try:
-                parsed = json.loads(arg)
-                if isinstance(parsed, dict):
-                    box_iri = parsed.get("box_iri") or parsed.get("box") or box_iri
-                    destination_iri = parsed.get("destination_iri") or parsed.get("destination")
-            except Exception:
-                pass
+        def receive(payload: ReceivePayload) -> dict:
+            """Workflow endpoint: receive a box using a typed JSON body.
+
+            """
+
+            box_iri = payload.box_iri
+            destination_iri = payload.destination_iri
 
             return self.receive(str(box_iri), str(destination_iri) if destination_iri else None)
 
@@ -700,10 +697,10 @@ class FlexConveyor:
             receive_workflow_url = f"{next_url}/workflows/receive/execute"
             print(f"  📡 Forwarding box to {next_hop} via {receive_workflow_url}")
 
+            # Send box information as JSON body instead of query parameter
             response = requests.post(
                 receive_workflow_url,
-                # Query-param based workflow invocation (single-arg workflow).
-                params={"arg": box_iri},
+                json={"box_iri": box_iri},
                 timeout=30,
             )
 

@@ -250,6 +250,25 @@ else:
                     for row in st.session_state.directional_rows
                 ]
                 st.dataframe(topology_table, use_container_width=True)
+
+        st.subheader("Box Locations")
+
+        if st.button("Refresh box locations", key="refresh_box_locations"):
+            monitor_module = importlib.import_module("utils.system_state_monitor")
+            box_locations = monitor_module.get_box_locations(st.session_state.get("ogm"))
+
+            if not box_locations:
+                st.info("📦 No boxes currently in the system.")
+            else:
+                location_data = []
+                for module_iri, box_iris in sorted(box_locations.items()):
+                    for box_iri in box_iris:
+                        location_data.append({
+                            "Module": module_iri,
+                            "Box": box_iri,
+                        })
+
+                st.dataframe(location_data, use_container_width=True)
            
         button_columns = st.columns(4)
         for index, discovered_module in enumerate(st.session_state.discovered_modules):
@@ -270,11 +289,188 @@ else:
                 with button_columns[index % 4]:
                     st.caption(f"{module_id}: no accessibleAt value found")
 
-        st.info("Coming soon: Real-time system visualization")
-
     else:
         st.header("Runtime Control")
-        st.info("Coming soon: Simulation and box injection controls")
+
+        if not is_ogm_initialized():
+            st.warning("⚠️ OGM not initialized. Please reconnect to GraphDB.")
+        else:
+            ogm = get_ogm()
+
+            # Ensure shared discovery state exists (also used by Monitor tab)
+            if "discovered_modules" not in st.session_state:
+                st.session_state.discovered_modules = []
+
+            st.subheader("Inject and Route Boxes")
+
+            control_module = importlib.import_module("utils.control")
+            route_module = importlib.import_module("utils.route_planner")
+            topology_module = importlib.import_module("utils.topology_renderer")
+
+            col_refresh, _ = st.columns([1, 3])
+            with col_refresh:
+                if st.button(
+                    "Refresh modules", key="control_refresh_modules", use_container_width=True
+                ):
+                    st.session_state.discovered_modules = control_module.discover_modules(ogm)
+
+            discovered = st.session_state.discovered_modules
+
+            if not discovered:
+                st.info(
+                    "No instantiated modules discovered yet. "
+                    "Use the Bootstrap & Monitor tabs to create modules, then click 'Refresh modules'."
+                )
+            else:
+                module_ids = [m.get("module_id", "") for m in discovered if m.get("module_id")]
+
+                entry_module_id = st.selectbox(
+                    "Entry module (where the box is first received)",
+                    options=module_ids,
+                    key="control_entry_module_id",
+                )
+
+                box_iri = st.text_input(
+                    "Box IRI",
+                    value=st.session_state.get("control_box_iri", ""),
+                    key="control_box_iri",
+                    help="Full IRI of the box to inject into the system.",
+                )
+
+                dest_options = ["(no override – use existing destination)"] + module_ids
+                dest_choice = st.selectbox(
+                    "Destination module (optional)",
+                    options=dest_options,
+                    key="control_destination_module_id",
+                    help=(
+                        "If set, the receive workflow will update the box's hasDestination "
+                        "to this module and immediately start routing. If left as the first "
+                        "option, any existing destination in the knowledge graph is used."
+                    ),
+                )
+
+                destination_iri = None if dest_choice == dest_options[0] else dest_choice
+
+                # Look up the selected module's accessibleAt URL from the
+                # cached discovery result so we don't touch GraphDB/OGM on
+                # every injection.
+                selected_module = next(
+                    (m for m in discovered if m.get("module_id") == entry_module_id),
+                    None,
+                )
+                entry_module_url = (selected_module or {}).get("accessible_at") if selected_module else None
+
+                if st.button("Inject box", type="primary", key="control_inject_box"):
+                    if not box_iri:
+                        st.error("Please provide a Box IRI before injecting.")
+                    elif not entry_module_url:
+                        st.error(
+                            "Selected entry module has no accessibleAt URL. "
+                            "Rebuild and discover modules in the Monitor tab, then refresh."
+                        )
+                    else:
+                        with st.spinner("Sending box to selected module..."):
+                            result = control_module.inject_box_via_url(
+                                entry_module_url=entry_module_url,
+                                box_iri=box_iri,
+                                destination_iri=destination_iri,
+                            )
+
+                        status = result.get("status")
+                        if status == "ok":
+                            st.success(
+                                f"Box injected successfully into module {entry_module_id} "
+                                f"(HTTP {result.get('http_status')})."
+                            )
+                        elif status == "downstream_error":
+                            st.error(
+                                "The target module responded with an error "
+                                f"(HTTP {result.get('http_status')})."
+                            )
+                        else:
+                            st.error(result.get("error", "Unknown error during injection"))
+
+                        with st.expander("Request details", expanded=False):
+                            st.json(
+                                {
+                                    "receive_url": result.get("receive_url"),
+                                    "payload": result.get("payload"),
+                                    "response": result.get("response"),
+                                }
+                            )
+
+                st.divider()
+                st.subheader("Step-by-step Route Visualization")
+
+                if "simulation_route" not in st.session_state:
+                    st.session_state.simulation_route = []
+                if "simulation_step_index" not in st.session_state:
+                    st.session_state.simulation_step_index = 0
+
+                sim_col1, sim_col2, sim_col3 = st.columns(3)
+
+                start_clicked = sim_col1.button("Start", key="sim_start")
+                step_clicked = sim_col2.button("Step", key="sim_step")
+                stop_clicked = sim_col3.button("Stop", key="sim_stop")
+
+                if start_clicked:
+                    if not destination_iri:
+                        st.error("Please select a destination module for visualization.")
+                    else:
+                        # Build or reuse adjacency map from the monitor helpers
+                        if not st.session_state.get("adjacency_matrix"):
+                            monitor_module = importlib.import_module("utils.system_state_monitor")
+                            st.session_state.adjacency_matrix = monitor_module.build_adjacency_matrix(ogm)
+
+                        adj_map = st.session_state.adjacency_matrix
+                        graph = route_module.build_topology_graph(adj_map)
+                        route = route_module.dijkstra_shortest_path(
+                            graph,
+                            source=entry_module_id,
+                            target=destination_iri,
+                        )
+
+                        if not route or len(route) < 2:
+                            st.error("No valid route found between the selected modules.")
+                            st.session_state.simulation_route = []
+                            st.session_state.simulation_step_index = 0
+                        else:
+                            st.session_state.simulation_route = route
+                            st.session_state.simulation_step_index = 0
+
+                if step_clicked and st.session_state.simulation_route:
+                    if st.session_state.simulation_step_index < len(
+                        st.session_state.simulation_route
+                    ) - 1:
+                        st.session_state.simulation_step_index += 1
+
+                if stop_clicked:
+                    st.session_state.simulation_route = []
+                    st.session_state.simulation_step_index = 0
+
+                current_module_for_box = None
+                if st.session_state.simulation_route:
+                    idx = st.session_state.simulation_step_index
+                    if 0 <= idx < len(st.session_state.simulation_route):
+                        current_module_for_box = st.session_state.simulation_route[idx]
+
+                if not st.session_state.get("adjacency_matrix"):
+                    st.info(
+                        "No topology information available yet. Use the Monitor tab "
+                        "to build the adjacency matrix or press Start to initialize it."
+                    )
+                else:
+                    if not st.session_state.get("directional_rows"):
+                        st.session_state.directional_rows = topology_module.adjacency_map_to_directional_rows(
+                            st.session_state.adjacency_matrix
+                        )
+
+                    if st.session_state.directional_rows:
+                        fig = topology_module.directional_rows_to_figure_with_box(
+                            st.session_state.directional_rows,
+                            current_module_for_box,
+                        )
+                        st.pyplot(fig, clear_figure=True)
 
 
 # ============================================================================
