@@ -1,0 +1,101 @@
+# Plan: Funktion zum starten des generierens von Boxen alle x Sekunden
+# hier für über GraphDB infos prüfen welche Module frei sind
+# dann start auf ein zufälliges freies Modul setzen und ende auf ein anderes zufälliges Modul
+
+import time
+import random
+from streamlit import st
+
+from kapps_ogm import OGM
+
+
+def generate_box(ogm: OGM):
+    """
+    Generates a box on a random free FlexConveyor module in the system.
+
+    Args:
+        ogm: The OGM instance connected to GraphDB
+        interval_seconds: Time interval in seconds between box generations
+    """
+    # Query GraphDB for free FlexConveyor modules
+    modules = st.session_state.get("modules", [])
+    free_modules = []
+    # TODO: hier noch mit discover_modules die info holen, ob das modul gerade für
+    # hasPossession eine Box hat, wenn ja dann nicht in free_modules hinzufügen,
+    # wenn keine Box in free_modules hinzufügen
+    if not free_modules:
+        print("No free FlexConveyor modules available. Retrying...")
+
+    # Randomly select a start and end module from the free modules
+    start_module = random.choice(free_modules)
+    end_module = random.choice([m for m in free_modules if m != start_module])
+
+    # Generate a box on the start module and set it to move to the end module
+    # TODO: erzeuge Box instanz mit den start_module und end_module daten und
+    # passe hasPossession von dem Modul auf das die Box gesetzt wird an.
+    # Dann starte Wegfindung und transport der Box
+    print(f"Generated box on {start_module} moving to {end_module}")
+
+
+def check_and_generate_box(ogm: OGM, interarrival_time):
+    """Prüft, ob eine Box erzeugt werden soll, und aktualisiert den Timer."""
+    if st.session_state.box_generation_active:
+        if st.session_state.next_box_time is None:
+            st.session_state.next_box_time = time.time() + interarrival_time
+        elif time.time() >= st.session_state.next_box_time:
+            generate_box(ogm)
+            st.session_state.next_box_time = time.time() + interarrival_time
+            st.experimental_rerun()  # Timer for the next box
+
+
+def render_box_instantiation(ogm: OGM):
+    initialize_box_instance_session_state()
+
+    if "box_generation_active" not in st.session_state:
+        st.session_state.box_generation_active = False
+    if "next_box_time" not in st.session_state:
+        st.session_state.next_box_time = None
+
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        box_interarrival_time_input = st.text_input(
+            "Enter interarrival time for the boxes (seconds)", ""
+        )
+
+    with col2:
+        if st.button("Start box generation"):
+            st.session_state.box_generation_active = True
+            try:
+                interarrival_time = int(box_interarrival_time_input)
+            except ValueError:
+                interarrival_time = 10
+            st.session_state.next_box_time = time.time() + interarrival_time
+            st.info(f"Box generation started with {interarrival_time}s interval.")
+
+    with col3:
+        if st.button("Stop box generation"):
+            st.session_state.box_generation_active = False
+            st.session_state.next_box_time = None
+
+    # check for new box
+    try:
+        interarrival_time = int(box_interarrival_time_input)
+    except ValueError:
+        interarrival_time = 10
+
+    check_and_generate_box(ogm, interarrival_time)
+
+
+def initialize_box_instance_session_state():
+    """Initialize session state variables for Box instance management."""
+    if "box_instance_fields" not in st.session_state:
+        st.session_state.box_instance_fields = None
+
+    if "boxes" not in st.session_state:
+        st.session_state.boxes = []
+
+    if "editing_box_index" not in st.session_state:
+        st.session_state.editing_box_index = None
+
+    if "editing_box_fields" not in st.session_state:
+        st.session_state.editing_box_fields = None
