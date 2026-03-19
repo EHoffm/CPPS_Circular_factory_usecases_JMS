@@ -134,7 +134,7 @@ def render_connection_item(
         with col2:
             # Delete button for this connection
             if st.button(
-                "🗑️ Remove", key=f"{field_path}_remove_{index}", use_container_width=True
+                "🗑️ Remove", key=f"{field_path}_remove_{index}", width="stretch"
             ):
                 return None  # Signal to remove this connection
 
@@ -553,12 +553,12 @@ def render_instance_form(
         if st.button(
             "💾 Save Instance",
             type="primary",
-            use_container_width=True,
+            width="stretch",
             key=f"{form_key}_submit",
         ):
             return user_values
     with col2:
-        if st.button("❌ Cancel", use_container_width=True, key=f"{form_key}_cancel"):
+        if st.button("❌ Cancel", width="stretch", key=f"{form_key}_cancel"):
             # Clear session state
             keys_to_clear = [
                 k for k in st.session_state.keys() if k.startswith(form_key)
@@ -696,7 +696,7 @@ def render_flex_module_instantiation(ogm: OGM):
                         if st.button(
                             "✏️",
                             key=f"edit_module_{idx}",
-                            use_container_width=True,
+                            width="stretch",
                         ):
                             # Prepare edit form with existing module data
                             st.session_state.editing_module_index = idx
@@ -722,9 +722,7 @@ def render_flex_module_instantiation(ogm: OGM):
                             st.rerun()
 
                     with col3:
-                        if st.button(
-                            "🗑️", key=f"remove_module_{idx}", use_container_width=True
-                        ):
+                        if st.button("🗑️", key=f"remove_module_{idx}", width="stretch"):
                             st.session_state.modules.pop(idx)
                             st.rerun()
 
@@ -744,7 +742,7 @@ def render_flex_module_instantiation(ogm: OGM):
 
         col1, col2 = st.columns([2, 1])
         with col1:
-            if st.button(button_label, type="primary", use_container_width=True):
+            if st.button(button_label, type="primary", width="stretch"):
                 try:
                     with st.spinner("Loading ontology structure..."):
                         # Create blank instance
@@ -769,7 +767,7 @@ def render_flex_module_instantiation(ogm: OGM):
                     st.error(f"❌ Failed to create blank instance: {str(e)}")
 
         with col2:
-            if st.button("👁️ Preview JSON", use_container_width=True):
+            if st.button("👁️ Preview JSON", width="stretch"):
                 st.session_state.show_modules_preview = (
                     not st.session_state.show_modules_preview
                 )
@@ -790,16 +788,14 @@ def render_flex_module_instantiation(ogm: OGM):
                     data=preview_json,
                     file_name="modules_preview.json",
                     mime="application/json",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
         # Instantiate button - always visible when modules exist
         st.divider()
         col_inst1, col_inst2 = st.columns([1, 1])
         with col_inst1:
-            if st.button(
-                "⚡ Instantiate Modules", use_container_width=True, type="primary"
-            ):
+            if st.button("⚡ Instantiate Modules", width="stretch", type="primary"):
                 if not st.session_state.modules:
                     st.error(
                         "❌ No modules to instantiate. Add at least one module first."

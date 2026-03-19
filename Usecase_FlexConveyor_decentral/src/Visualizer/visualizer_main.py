@@ -227,9 +227,7 @@ else:
             if st.session_state.topology_image_png:
                 left_col, center_col, right_col = st.columns([0.2, 0.6, 0.2])
                 with center_col:
-                    st.image(
-                        st.session_state.topology_image_png, use_container_width=True
-                    )
+                    st.image(st.session_state.topology_image_png, width="stretch")
 
             if st.session_state.directional_rows:
                 st.caption("Adjacency Matrix ")
@@ -249,7 +247,7 @@ else:
                     }
                     for row in st.session_state.directional_rows
                 ]
-                st.dataframe(topology_table, use_container_width=True)
+                st.dataframe(topology_table, width="stretch")
 
         st.subheader("Box Locations")
 
@@ -272,7 +270,7 @@ else:
                             }
                         )
 
-                st.dataframe(location_data, use_container_width=True)
+                st.dataframe(location_data, width="stretch")
 
         button_columns = st.columns(4)
         for index, discovered_module in enumerate(st.session_state.discovered_modules):
@@ -316,7 +314,7 @@ else:
                 if st.button(
                     "Refresh modules",
                     key="control_refresh_modules",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     st.session_state.discovered_modules = (
                         control_module.discover_modules(ogm)
