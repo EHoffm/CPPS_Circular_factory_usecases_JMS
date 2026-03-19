@@ -2,6 +2,7 @@ import heapq
 import json
 import threading
 import time
+from collections import deque
 from typing import Optional, Any, Dict
 
 import requests
@@ -58,6 +59,9 @@ class FlexConveyor:
         self.adj: list[list[IRI | int]] = []
         self.accessible_at_by_module: dict[IRI, str | None] = {}
         self.service_instance_iri: Optional[IRI] = None
+        self._reserve_queue: deque[dict[str, Any]] = deque()
+        self._reserve_queue_lock = threading.Lock()
+        self._reserve_worker_running = False
 
         # Setup middleware
         property_chains = [
@@ -120,21 +124,58 @@ class FlexConveyor:
             box_iri: str
             destination_iri: str | None = None
 
-        def receive(payload: ReceivePayload) -> dict:
-            """Workflow endpoint: receive a box using a typed JSON body.
+        class ReservePayload(BaseModel):
+            box_iri: str
+            source_module_iri: str
 
+        class ConveyPayload(BaseModel):
+            box_iri: str
+            destination_module_iri: str
+            destination_module_url: str
+
+        def reserve(payload: ReservePayload) -> dict:
+            """Step 1: Reserve workflow - check if this module is ready to receive.
+
+            Called by the source module before attempting to transfer a parcel.
+            This module checks if it currently has a parcel; if so, it waits
+            until the parcel is moved from it before returning ready status.
             """
+            return self.reserve(payload.box_iri, payload.source_module_iri)
 
+        def convey(payload: ConveyPayload) -> dict:
+            """Step 2: Convey workflow - transfer parcel ownership.
+
+            Called on the source module by the destination module.
+            Source removes ownership, then triggers destination receive.
+            """
+            return self.convey(
+                payload.box_iri,
+                payload.destination_module_iri,
+                payload.destination_module_url,
+            )
+
+        def receive(payload: ReceivePayload) -> dict:
+            """Step 3: Receive workflow - finalize reception and route.
+
+            Called by the source module after convey completes.
+            Updates the parcel state and runs Dijkstra to route to the
+            next hop or destination.
+            """
             box_iri = payload.box_iri
             destination_iri = payload.destination_iri
-
             return self.receive(str(box_iri), str(destination_iri) if destination_iri else None)
 
         def has_parcel() -> dict:
             return self.has_parcel()
 
+        def clear_parcels() -> dict:
+            return self.clear_parcels()
+
+        self.mw.workflow()(reserve)
+        self.mw.workflow()(convey)
         self.mw.workflow()(receive)
         self.mw.workflow()(has_parcel)
+        self.mw.workflow()(clear_parcels)
 
         print(f"✓ FlexConveyor module initialized: {self.module_id}")
         print(f"  Assigned port: {self.port}")
@@ -280,6 +321,45 @@ class FlexConveyor:
 
         print(f"📊 [{self.module_id}] has_parcel={bool(boxes)}, boxes={boxes}")
         return result
+
+    def clear_parcels(self) -> dict:
+        """Remove all parcels from the system.
+
+        Deletes all hasPossession and isPossessedBy triples, effectively
+        removing all parcel ownership relationships from all modules.
+
+        Returns:
+            dict with status and count of parcels removed.
+        """
+        FC = "http://w3id.org/circularfactory/FlexConveyor#"
+        INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
+        named_graph = IRI(INST)
+
+        has_possession = IRI(f"{FC}hasPossession")
+        is_possessed_by = IRI(f"{FC}isPossessedBy")
+
+        # Get all possession triples across the entire system
+        all_possession = self.ogm.db.triples_get(pred=has_possession)
+        all_possessed = self.ogm.db.triples_get(pred=is_possessed_by)
+
+        count = len(all_possession) if all_possession else 0
+
+        # Delete all ownership relationships
+        if all_possession:
+            self.ogm.db.triples_delete(
+                all_possession, check_exist=False, named_graph=named_graph
+            )
+        if all_possessed:
+            self.ogm.db.triples_delete(
+                all_possessed, check_exist=False, named_graph=named_graph
+            )
+
+        print(f"🗑️  Cleared {count} parcel(s) from entire system")
+
+        return {
+            "status": "cleared",
+            "parcels_removed": count,
+        }
 
     @staticmethod
     def _direction_to_index(direction: str | None) -> int | None:
@@ -482,67 +562,285 @@ class FlexConveyor:
         return path
 
     # ------------------------------------------------------------------
-    #  Core workflows
+    #  Three-step parcel movement workflows
     # ------------------------------------------------------------------
 
-    def receive(self, box_iri: str, destination_iri: str | None = None) -> dict:
-        """Receive a box at this module.
+    def reserve(self, box_iri: str, source_module_iri: str) -> dict:
+        """Step 1: Reserve - enqueue caller and process in FIFO order.
 
-        1. Ensures the box exists in GraphDB.
-        2. Transfers ``hasPossession`` / ``isPossessedBy`` to this module
-           (removes from any previous owner).
-        3. Updates the box state to *InTransit* (or *Delivered* if this is
-           the destination).
-        4. If not at destination, triggers :meth:`route_box` to forward the
-           box along the shortest path.
+        Every reserve caller is queued. This module will trigger convey
+        strictly in queue order (first caller, then second, ...).
+        """
+        print(f"\n🔖 [{self.module_id}] Reserve called for box {box_iri} from source {source_module_iri}")
 
+        request = {
+            "box_iri": str(box_iri),
+            "source_module_iri": str(source_module_iri),
+            "event": threading.Event(),
+            "result": None,
+        }
+
+        should_start_worker = False
+        with self._reserve_queue_lock:
+            self._reserve_queue.append(request)
+            queue_len = len(self._reserve_queue)
+            print(f"  📥 Queued reserve request at position {queue_len}")
+            if not self._reserve_worker_running:
+                self._reserve_worker_running = True
+                should_start_worker = True
+
+        if should_start_worker:
+            worker = threading.Thread(
+                target=self._process_reserve_queue,
+                daemon=True,
+                name=f"ReserveQueue-{self.module_id}",
+            )
+            worker.start()
+
+        request["event"].wait()
+        return request["result"] if request["result"] is not None else {
+            "status": "error",
+            "module": str(self.module_id),
+            "reason": "Reserve queue processing returned no result",
+        }
+
+    def _process_reserve_queue(self) -> None:
+        """Process queued reserve requests in strict FIFO order."""
+        while True:
+            with self._reserve_queue_lock:
+                if not self._reserve_queue:
+                    self._reserve_worker_running = False
+                    return
+                request = self._reserve_queue.popleft()
+
+            try:
+                result = self._handle_single_reserve_request(
+                    box_iri=request["box_iri"],
+                    source_module_iri=request["source_module_iri"],
+                )
+            except Exception as e:
+                import traceback
+
+                result = {
+                    "status": "error",
+                    "module": str(self.module_id),
+                    "reason": str(e),
+                    "traceback": traceback.format_exc(),
+                }
+
+            request["result"] = result
+            request["event"].set()
+
+    def _handle_single_reserve_request(self, box_iri: str, source_module_iri: str) -> dict:
+        """Handle one reserve request: wait until free, then call source convey."""
+        FC = "http://w3id.org/circularfactory/FlexConveyor#"
+        has_possession = IRI(f"{FC}hasPossession")
+
+        timeout_seconds = 50
+        poll_interval = 0.5
+        elapsed = 0.0
+
+        while elapsed < timeout_seconds:
+            possession_triples = self.ogm.db.triples_get(sub=self.module_id, pred=has_possession)
+            boxes = [str(t[2]) for t in possession_triples] if possession_triples else []
+
+            if not boxes:
+                print(f"  ✓ [{self.module_id}] Free for queued box {box_iri}; triggering source convey")
+                break
+
+            print(f"  ⏳ [{self.module_id}] Busy with {len(boxes)} parcel(s): {boxes}. Waiting...")
+            time.sleep(poll_interval)
+            elapsed += poll_interval
+
+        if elapsed >= timeout_seconds:
+            print(f"  ❌ [{self.module_id}] Reserve timeout after {timeout_seconds}s for box {box_iri}")
+            return {
+                "status": "timeout",
+                "module": str(self.module_id),
+                "box": str(box_iri),
+                "source_module": str(source_module_iri),
+                "reason": "Module did not become free within timeout period",
+            }
+
+        self.discover_connections_and_services()
+        source_iri = IRI(source_module_iri) if not isinstance(source_module_iri, IRI) else source_module_iri
+        source_url = self.accessible_at_by_module.get(source_iri)
+
+        if not source_url:
+            print(f"  ❌ Source URL not found for {source_module_iri}")
+            return {
+                "status": "source_unreachable",
+                "module": str(self.module_id),
+                "box": str(box_iri),
+                "source_module": str(source_module_iri),
+                "reason": "Could not resolve source module service URL",
+            }
+
+        convey_url = f"{source_url}/workflows/convey/execute"
+        print(f"  📡 Calling source convey: {convey_url}")
+        response = requests.post(
+            convey_url,
+            json={
+                "box_iri": box_iri,
+                "destination_module_iri": str(self.module_id),
+                "destination_module_url": str(self.url),
+            },
+            timeout=None,
+        )
+
+        if response.status_code >= 400:
+            print(f"  ❌ Convey-on-source failed with HTTP {response.status_code}")
+            return {
+                "status": "convey_request_failed",
+                "module": str(self.module_id),
+                "box": str(box_iri),
+                "source_module": str(source_module_iri),
+                "http_status": response.status_code,
+                "http_text": response.text,
+            }
+
+        convey_result = response.json() if response.text else {}
+        return {
+            "status": "reserved_and_pulled",
+            "module": str(self.module_id),
+            "box": str(box_iri),
+            "source_module": str(source_module_iri),
+            "convey": convey_result,
+        }
+
+    def convey(self, box_iri: str, destination_module_iri: str, destination_module_url: str) -> dict:
+        """Step 2: Convey - Executed on source module.
+
+        Source module performs the full ownership transfer:
+        remove ownership from source and assign ownership to destination,
+        then calls destination module `receive`.
 
         Args:
-            box_iri: IRI string of the box being received.
-            destination_iri: Optional IRI string of the destination module.
+            box_iri: IRI of the parcel being transferred.
+            destination_module_iri: Destination module IRI.
+            destination_module_url: Destination module base URL.
 
         Returns:
-            dict describing the outcome (delivered / routed / received_no_destination).
+            dict with removal and downstream receive status.
         """
         FC = "http://w3id.org/circularfactory/FlexConveyor#"
         INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
         named_graph = IRI(INST)
 
         box = IRI(box_iri) if not isinstance(box_iri, IRI) else box_iri
+        destination_module = (
+            IRI(destination_module_iri)
+            if not isinstance(destination_module_iri, IRI)
+            else destination_module_iri
+        )
 
         has_possession = IRI(f"{FC}hasPossession")
         is_possessed_by = IRI(f"{FC}isPossessedBy")
-        has_state_prop = IRI(f"{FC}hasState")
-        has_destination = IRI(f"{FC}hasDestination")
-        has_origin = IRI(f"{FC}hasOrigin")
-        in_transit = IRI(f"{FC}InTransit")
-        delivered = IRI(f"{FC}Delivered")
-        rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-        box_class = IRI(f"{FC}Box")
 
+        print(f"\n📤 [{self.module_id}] Conveying box {box} to {destination_module}")
+
+        # Wait 1 second to simulate transit time
+        print(f"  ⏱️  Waiting 1 second for transit...")
+        time.sleep(5)
+
+        # Remove parcel from this source module
+        old_possession = self.ogm.db.triples_get(sub=self.module_id, pred=has_possession, obj=box)
+        if old_possession:
+            self.ogm.db.triples_delete(
+                old_possession, check_exist=False, named_graph=named_graph
+            )
+            print(f"  → Removed box from source module {self.module_id}")
+
+        # Remove old isPossessedBy on the box
+        old_possessed = self.ogm.db.triples_get(sub=box, pred=is_possessed_by)
+        if old_possessed:
+            self.ogm.db.triples_delete(
+                old_possessed, check_exist=False, named_graph=named_graph
+            )
+
+        # Remove any stale hasPossession triples for this box on any module
+        old_possession_any = self.ogm.db.triples_get(pred=has_possession, obj=box)
+        if old_possession_any:
+            self.ogm.db.triples_delete(
+                old_possession_any, check_exist=False, named_graph=named_graph
+            )
+
+        # Assign ownership to destination module (B)
+        self.ogm.db.triples_add(
+            [
+                (destination_module, has_possession, box),
+                (box, is_possessed_by, destination_module),
+            ],
+            check_exist=False,
+            named_graph=named_graph,
+        )
+        print(f"  ✓ Box ownership transferred: {self.module_id} → {destination_module}")
+
+        # Step 5: call receive on destination module
+        receive_url = f"{destination_module_url}/workflows/receive/execute"
+        print(f"  📡 Calling destination receive: {receive_url}")
+        response = requests.post(
+            receive_url,
+            json={"box_iri": str(box)},
+            timeout=None,
+        )
+
+        if response.status_code >= 400:
+            print(f"  ❌ Destination receive failed with HTTP {response.status_code}")
+            return {
+                "status": "conveyed_receive_failed",
+                "module": str(self.module_id),
+                "box": str(box),
+                "to_module": str(destination_module),
+                "http_status": response.status_code,
+                "http_text": response.text,
+            }
+
+        receive_result = response.json() if response.text else {}
+        print(f"  ✓ Destination receive succeeded")
+
+        return {
+            "status": "conveyed",
+            "module": str(self.module_id),
+            "box": str(box),
+            "to_module": str(destination_module),
+            "receive": receive_result,
+        }
+
+    def receive(self, box_iri: str, destination_iri: str | None = None) -> dict:
+        """Step 3: Receive - Determine next hop and initiate reserve.
+
+        This workflow computes the shortest path to the destination using
+        Dijkstra and calls reserve on the next hop module.
+        Ownership transfer is handled fully by the convey workflow.
+
+        Args:
+            box_iri: IRI string of the box being received.
+            destination_iri: Optional IRI string of the destination module.
+
+        Returns:
+            dict describing the route and next hop reservation status.
+        """
+        FC = "http://w3id.org/circularfactory/FlexConveyor#"
+        INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
+        named_graph = IRI(INST)
+
+        box = IRI(box_iri) if not isinstance(box_iri, IRI) else box_iri
+        has_destination = IRI(f"{FC}hasDestination")
+        has_state_prop = IRI(f"{FC}hasState")
+        delivered = IRI(f"{FC}Delivered")
+
+        print(f"\n📥 [{self.module_id}] Receive: processing box {box}")
+
+        # Get destination from payload or knowledge graph
         destination_arg = (
             IRI(destination_iri)
             if destination_iri is not None and not isinstance(destination_iri, IRI)
             else destination_iri
         )
 
-        print(
-            f"\n📦 [{self.module_id}] Receiving box: {box}"
-            + (f" (destination override: {destination_arg})" if destination_arg else "")
-        )
-
-        # 1. Ensure the box exists in GraphDB
-        existing = self.ogm.db.triples_get(sub=box, pred=rdf_type, obj=box_class)
-        if not existing:
-            self.ogm.db.triples_add(
-                [(box, rdf_type, box_class)],
-                check_exist=False,
-                named_graph=named_graph,
-            )
-            print(f"  → Created box {box} in knowledge graph")
-
-        # Optional injection behavior: upsert destination (and origin if missing).
         if destination_arg is not None:
+            # Update destination in knowledge graph if provided
             old_destinations = self.ogm.db.triples_get(sub=box, pred=has_destination)
             if old_destinations:
                 self.ogm.db.triples_delete(
@@ -554,54 +852,17 @@ class FlexConveyor:
                 named_graph=named_graph,
             )
 
-            origin_triples = self.ogm.db.triples_get(sub=box, pred=has_origin)
-            if not origin_triples:
-                self.ogm.db.triples_add(
-                    [(box, has_origin, self.module_id)],
-                    check_exist=False,
-                    named_graph=named_graph,
-                )
-
-        # 2. Remove box from any previous module's hasPossession
-        old_possessions = self.ogm.db.triples_get(pred=has_possession, obj=box)
-        if old_possessions:
-            self.ogm.db.triples_delete(
-                old_possessions, check_exist=False, named_graph=named_graph
-            )
-            old_owners = [str(t[0]) for t in old_possessions]
-            print(f"  → Removed box from previous owner(s): {old_owners}")
-
-        # Remove old isPossessedBy
-        old_possessed = self.ogm.db.triples_get(sub=box, pred=is_possessed_by)
-        if old_possessed:
-            self.ogm.db.triples_delete(
-                old_possessed, check_exist=False, named_graph=named_graph
-            )
-
-        # 3. Add this module as the new possessor
-        self.ogm.db.triples_add(
-            [
-                (self.module_id, has_possession, box),
-                (box, is_possessed_by, self.module_id),
-            ],
-            check_exist=False,
-            named_graph=named_graph,
-        )
-        print(f"  → Box is now at module {self.module_id}")
-
-        # 4. Update box state — remove old state first
-        old_states = self.ogm.db.triples_get(sub=box, pred=has_state_prop)
-        if old_states:
-            self.ogm.db.triples_delete(
-                old_states, check_exist=False, named_graph=named_graph
-            )
-
-        # 5. Check if this module is the destination
+        # Get destination from knowledge graph
         dest_triples = self.ogm.db.triples_get(sub=box, pred=has_destination)
         destination = dest_triples[0][2] if dest_triples else None
 
+        # Check if this module is the destination
         if destination and str(destination) == str(self.module_id):
-            # Box has arrived at its final destination
+            old_states = self.ogm.db.triples_get(sub=box, pred=has_state_prop)
+            if old_states:
+                self.ogm.db.triples_delete(
+                    old_states, check_exist=False, named_graph=named_graph
+                )
             self.ogm.db.triples_add(
                 [(box, has_state_prop, delivered)],
                 check_exist=False,
@@ -614,17 +875,9 @@ class FlexConveyor:
                 "box": str(box),
             }
 
-        # Box is in transit
-        self.ogm.db.triples_add(
-            [(box, has_state_prop, in_transit)],
-            check_exist=False,
-            named_graph=named_graph,
-        )
-        print(f"  📍 Box {box} is now IN TRANSIT at {self.module_id}")
-
-        # 6. Trigger routing to forward the box towards its destination
+        # Not at destination - compute route and call reserve on next hop
         if destination:
-            print(f"  🔄 Routing box towards destination: {destination}")
+            print(f"  🔄 Computing route to destination: {destination}")
             routing_result = self.route_box(str(box), str(destination))
             return {
                 "status": "routed",
@@ -634,7 +887,7 @@ class FlexConveyor:
                 "routing": routing_result,
             }
 
-        print(f"  ⚠️  No destination set for box {box} — box will stay here")
+        print(f"  ⚠️  No destination set for box {box}")
         return {
             "status": "received_no_destination",
             "module": str(self.module_id),
@@ -642,15 +895,17 @@ class FlexConveyor:
         }
 
     def route_box(self, box_iri: str, destination_iri: str) -> dict:
-        """Route a box to its destination using Dijkstra's shortest path."""
+        """Route a box to its destination using Dijkstra's shortest path.
+
+        Uses the 3-step workflow: reserve → convey → receive.
+        """
         try:
             source = str(self.module_id)
             target = destination_iri
 
             print(f"\n🗺️  [{self.module_id}] Computing route: {source} → {target}")
 
-            # Always refresh topology: at startup, modules are instantiated sequentially,
-            # so early-started modules may have built a partial adjacency matrix.
+            # Always refresh topology
             self.discover_connections_and_services()
 
             path = self._dijkstra_shortest_path(source, target)
@@ -662,11 +917,10 @@ class FlexConveyor:
                     "source": source,
                     "destination": target,
                     "path": [],
-                    "internal_adj": [[str(x) for x in r] for r in self.adj]
                 }
 
             if len(path) < 2:
-                # Already at destination (shouldn't normally happen — receive handles it)
+                # Already at destination
                 print("  ✅ Already at destination")
                 return {
                     "status": "already_at_destination",
@@ -691,40 +945,50 @@ class FlexConveyor:
                     "path": path,
                 }
 
-            # Forward the box to the next module by calling its receive workflow.
-            # aas_middleware exposes workflows under /workflows/<name>/execute and
-            # passes positional args via the `arg` query parameter.
-            receive_workflow_url = f"{next_url}/workflows/receive/execute"
-            print(f"  📡 Forwarding box to {next_hop} via {receive_workflow_url}")
+            print(f"  📡 Initiating pull-handshake transfer to {next_hop}")
 
-            # Send box information as JSON body instead of query parameter
+            # Step 1: Reserve
+            reserve_url = f"{next_url}/workflows/reserve/execute"
+            print(f"  1️⃣  Reserve: {reserve_url}")
             response = requests.post(
-                receive_workflow_url,
-                json={"box_iri": box_iri},
-                timeout=30,
+                reserve_url,
+                json={
+                    "box_iri": box_iri,
+                    "source_module_iri": str(self.module_id),
+                },
+                timeout=None,
             )
 
             if response.status_code >= 400:
-                # Include body to make downstream errors debuggable.
+                print(f"  ❌ Reserve failed with HTTP {response.status_code}")
                 return {
-                    "status": "downstream_error",
+                    "status": "reserve_failed",
                     "next_hop": next_hop,
-                    "full_path": path,
                     "http_status": response.status_code,
                     "http_text": response.text,
-                    "receive_url": receive_workflow_url,
                 }
 
-            result = response.json() if response.text else {"status": "ok"}
+            reserve_result = response.json() if response.text else {}
+            if reserve_result.get("status") != "reserved_and_pulled":
+                print(f"  ⏳ Transfer did not complete: {reserve_result.get('reason', 'unknown')}")
+                return {
+                    "status": "reserve_or_pull_failed",
+                    "next_hop": next_hop,
+                    "reserve_response": reserve_result,
+                }
 
-            print(f"  ✅ Box forwarded successfully to {next_hop}")
+            print(f"  ✅ Pull-handshake transfer completed to {next_hop}")
+
             return {
-                "status": "forwarded",
+                "status": "transferred",
                 "next_hop": next_hop,
                 "full_path": path,
                 "hops_remaining": len(path) - 2,
-                "response": result,
+                "steps": {
+                    "reserve": reserve_result,
+                },
             }
+
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()

@@ -371,6 +371,8 @@ else:
                     else:
                         with st.spinner("Sending box to selected module..."):
                             result = control_module.inject_box_via_url(
+                                ogm=ogm,
+                                entry_module_iri=entry_module_id,
                                 entry_module_url=entry_module_url,
                                 box_iri=box_iri,
                                 destination_iri=destination_iri,

@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from kapps_ogm.ogm import OGM
+from graph_db_interface.utils.iri import IRI
 
 from .system_state_monitor import discover_modules as _discover_modules
 
@@ -25,7 +26,74 @@ def discover_modules(ogm: OGM) -> List[Dict[str, str | None]]:
     return _discover_modules(ogm)
 
 
+def _setup_box_ownership(
+    ogm: OGM,
+    box_iri: str,
+    entry_module_iri: str,
+) -> bool:
+    """Set up box ownership in knowledge graph before injection.
+
+    Creates the box if it doesn't exist and transfers ownership to the
+    entry module. This is required because the receive workflow no longer
+    handles ownership transfer.
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    try:
+        FC = "http://w3id.org/circularfactory/FlexConveyor#"
+        INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
+        named_graph = IRI(INST)
+
+        box = IRI(box_iri)
+        entry_module = IRI(entry_module_iri)
+
+        rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+        box_class = IRI(f"{FC}Box")
+        has_possession = IRI(f"{FC}hasPossession")
+        is_possessed_by = IRI(f"{FC}isPossessedBy")
+
+        # Ensure box exists
+        existing = ogm.db.triples_get(sub=box, pred=rdf_type, obj=box_class)
+        if not existing:
+            ogm.db.triples_add(
+                [(box, rdf_type, box_class)],
+                check_exist=False,
+                named_graph=named_graph,
+            )
+
+        # Remove from any previous owner
+        old_possessions = ogm.db.triples_get(pred=has_possession, obj=box)
+        if old_possessions:
+            ogm.db.triples_delete(
+                old_possessions, check_exist=False, named_graph=named_graph
+            )
+
+        old_possessed = ogm.db.triples_get(sub=box, pred=is_possessed_by)
+        if old_possessed:
+            ogm.db.triples_delete(
+                old_possessed, check_exist=False, named_graph=named_graph
+            )
+
+        # Transfer to entry module
+        ogm.db.triples_add(
+            [
+                (entry_module, has_possession, box),
+                (box, is_possessed_by, entry_module),
+            ],
+            check_exist=False,
+            named_graph=named_graph,
+        )
+        return True
+
+    except Exception as e:
+        print(f"Error setting up box ownership: {e}")
+        return False
+
+
 def inject_box_via_url(
+    ogm: OGM,
+    entry_module_iri: str,
     entry_module_url: str,
     box_iri: str,
     destination_iri: Optional[str] = None,
@@ -33,8 +101,8 @@ def inject_box_via_url(
 ) -> Dict[str, Any]:
     """Fast path: inject a box using a known module service URL.
 
-    This avoids any GraphDB/OGM calls and behaves like a direct
-    HTTP request to the module's `receive` workflow.
+    Sets up ownership in the knowledge graph first, then calls receive
+    workflow on the entry module.
     """
 
     entry_module_url = (entry_module_url or "").strip()
@@ -43,6 +111,13 @@ def inject_box_via_url(
 
     if not box_iri:
         return {"status": "error", "error": "Box IRI must not be empty"}
+
+    # Set up ownership before calling receive
+    if not _setup_box_ownership(ogm, box_iri, entry_module_iri):
+        return {
+            "status": "error",
+            "error": "Failed to set up box ownership in knowledge graph",
+        }
 
     base_url = entry_module_url.rstrip("/")
     receive_url = f"{base_url}/workflows/receive/execute"
@@ -123,8 +198,11 @@ def inject_box(
         }
 
     return inject_box_via_url(
+        ogm=ogm,
+        entry_module_iri=entry_module_id,
         entry_module_url=accessible_at,
         box_iri=box_iri,
         destination_iri=destination_iri,
         timeout=timeout,
     )
+
