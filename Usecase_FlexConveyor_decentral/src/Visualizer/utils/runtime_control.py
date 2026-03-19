@@ -14,7 +14,7 @@ import requests
 
 
 def filter_modules_with_urls(
-    discovered_modules: List[Dict[str, str | None]]
+    discovered_modules: List[Dict[str, str | None]],
 ) -> List[Dict[str, str]]:
     """Return only modules that expose an accessibleAt URL.
 

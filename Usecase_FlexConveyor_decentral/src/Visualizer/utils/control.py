@@ -205,4 +205,3 @@ def inject_box(
         destination_iri=destination_iri,
         timeout=timeout,
     )
-

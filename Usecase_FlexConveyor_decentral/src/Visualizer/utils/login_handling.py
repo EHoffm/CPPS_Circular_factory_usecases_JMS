@@ -247,9 +247,7 @@ def test_connection():
         results_after_delete = db.triples_get(sub=test_subject)
 
         if not results_after_delete:
-            st.success(
-                "✅ Connection test successful! Triple was properly deleted."
-            )
+            st.success("✅ Connection test successful! Triple was properly deleted.")
         else:
             st.warning(f"⚠️ Found {len(results_after_delete)} triple(s) after deletion")
 
@@ -296,7 +294,7 @@ def render_login_sidebar():
 
 def is_connected() -> bool:
     """Check if user is connected to GraphDB.
-    
+
     Returns:
         bool: True if connected, False otherwise.
     """
@@ -305,7 +303,7 @@ def is_connected() -> bool:
 
 def get_credentials() -> GraphDBCredentials:
     """Get the current GraphDB credentials from session state.
-    
+
     Returns:
         GraphDBCredentials: The stored credentials, or None if not connected.
     """
@@ -314,7 +312,7 @@ def get_credentials() -> GraphDBCredentials:
 
 def get_ogm() -> OGM:
     """Get the current OGM instance from session state.
-    
+
     Returns:
         OGM: The initialized OGM instance, or None if not initialized.
     """
@@ -323,7 +321,7 @@ def get_ogm() -> OGM:
 
 def is_ogm_initialized() -> bool:
     """Check if OGM is initialized.
-    
+
     Returns:
         bool: True if OGM is initialized, False otherwise.
     """

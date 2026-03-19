@@ -40,7 +40,9 @@ def _create_bidirectional_connections(ogm: OGM, named_graph: IRI) -> None:
     """
 
     rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-    module_class = IRI("http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule")
+    module_class = IRI(
+        "http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule"
+    )
     has_connection = IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection")
     connects_to = IRI("http://w3id.org/circularfactory/FlexConveyor#connectsTo")
     has_direction = IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection")
@@ -65,7 +67,9 @@ def _create_bidirectional_connections(ogm: OGM, named_graph: IRI) -> None:
 
         for _s, _p, conn_node_iri in connections:
             target_triples = ogm.db.triples_get(sub=conn_node_iri, pred=connects_to)
-            direction_triples = ogm.db.triples_get(sub=conn_node_iri, pred=has_direction)
+            direction_triples = ogm.db.triples_get(
+                sub=conn_node_iri, pred=has_direction
+            )
 
             for _s, _p, target_iri in target_triples:
                 for _s, _p, direction_iri in direction_triples:
@@ -77,7 +81,11 @@ def _create_bidirectional_connections(ogm: OGM, named_graph: IRI) -> None:
     # Now add reverse connections where missing
     reverse_triples_to_add = []
 
-    for (src_module, dst_module, direction_str), _conn_data in existing_connections.items():
+    for (
+        src_module,
+        dst_module,
+        direction_str,
+    ), _conn_data in existing_connections.items():
         opposite_direction = _DIRECTION_OPPOSITES.get(direction_str)
         if not opposite_direction:
             continue
@@ -94,9 +102,11 @@ def _create_bidirectional_connections(ogm: OGM, named_graph: IRI) -> None:
             # Extract fragment parts to create a unique connection node ID
             src_fragment = src_iri.fragment or str(src_iri).split("#")[-1]
             dst_fragment = dst_iri.fragment or str(dst_iri).split("#")[-1]
-            
+
             # Create a new connection node IRI with a valid format
-            conn_node_id = f"{base_namespace}#connection_{dst_fragment}_to_{src_fragment}"
+            conn_node_id = (
+                f"{base_namespace}#connection_{dst_fragment}_to_{src_fragment}"
+            )
             conn_node_iri = IRI(conn_node_id)
 
             reverse_triples_to_add.append((dst_iri, has_connection, conn_node_iri))
@@ -172,7 +182,12 @@ def stop_all_modules() -> int:
 # OGM's Node expects object-property values to be dicts so it can convert them
 # into Node references.  The JSON exported by the GUI stores them as bare IRI
 # strings, so we wrap them here before handing data to ogm.create().
-_OBJECT_PROPERTY_FRAGMENTS = {"connectsTo", "hasDirection", "hasPossession", "hasService"}
+_OBJECT_PROPERTY_FRAGMENTS = {
+    "connectsTo",
+    "hasDirection",
+    "hasPossession",
+    "hasService",
+}
 
 
 def _is_object_property_key(key: str) -> bool:

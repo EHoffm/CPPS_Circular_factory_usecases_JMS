@@ -97,7 +97,9 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
         print("No instantiated modules found")
         return discovered
 
-    has_service_key = IRI("http://w3id.org/circularfactory/FlexConveyor#hasService").lined
+    has_service_key = IRI(
+        "http://w3id.org/circularfactory/FlexConveyor#hasService"
+    ).lined
     accessible_at_key = IRI(
         "http://w3id.org/circularfactory/FlexConveyor#accessibleAt"
     ).lined
@@ -116,7 +118,7 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
             [
                 IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
                 IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection"),
-            ]
+            ],
         ]
         module_service = ogm.fetch(
             instance_iri=module,
@@ -141,9 +143,7 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
             if accessible_at:
                 break
 
-        discovered.append(
-            {"module_id": str(module), "accessible_at": accessible_at}
-        )
+        discovered.append({"module_id": str(module), "accessible_at": accessible_at})
 
     return discovered
 
@@ -159,9 +159,13 @@ def get_box_locations(ogm: OGM) -> dict[str, list[str]]:
     locations: dict[str, list[str]] = {}
 
     try:
-        has_possession = IRI("http://w3id.org/circularfactory/FlexConveyor#hasPossession")
+        has_possession = IRI(
+            "http://w3id.org/circularfactory/FlexConveyor#hasPossession"
+        )
         rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-        module_class = IRI("http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule")
+        module_class = IRI(
+            "http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule"
+        )
 
         # Get all modules
         module_triples = ogm.db.triples_get(pred=rdf_type, obj=module_class)
@@ -170,7 +174,11 @@ def get_box_locations(ogm: OGM) -> dict[str, list[str]]:
         # For each module, find boxes it possesses
         for module_iri in modules:
             possession_triples = ogm.db.triples_get(sub=module_iri, pred=has_possession)
-            boxes = [str(triple[2]) for triple in possession_triples] if possession_triples else []
+            boxes = (
+                [str(triple[2]) for triple in possession_triples]
+                if possession_triples
+                else []
+            )
             if boxes:
                 locations[str(module_iri)] = boxes
 

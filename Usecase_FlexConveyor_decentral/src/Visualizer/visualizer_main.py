@@ -192,9 +192,7 @@ else:
                 st.session_state.get("ogm")
             )
 
-        if action_col2.button(
-            "build adjacency matrix", key="build_adjacency_matrix"
-        ):
+        if action_col2.button("build adjacency matrix", key="build_adjacency_matrix"):
             monitor_module = importlib.import_module("utils.system_state_monitor")
             st.session_state.adjacency_matrix = monitor_module.build_adjacency_matrix(
                 st.session_state.get("ogm")
@@ -229,7 +227,9 @@ else:
             if st.session_state.topology_image_png:
                 left_col, center_col, right_col = st.columns([0.2, 0.6, 0.2])
                 with center_col:
-                    st.image(st.session_state.topology_image_png, use_container_width=True)
+                    st.image(
+                        st.session_state.topology_image_png, use_container_width=True
+                    )
 
             if st.session_state.directional_rows:
                 st.caption("Adjacency Matrix ")
@@ -255,7 +255,9 @@ else:
 
         if st.button("Refresh box locations", key="refresh_box_locations"):
             monitor_module = importlib.import_module("utils.system_state_monitor")
-            box_locations = monitor_module.get_box_locations(st.session_state.get("ogm"))
+            box_locations = monitor_module.get_box_locations(
+                st.session_state.get("ogm")
+            )
 
             if not box_locations:
                 st.info("📦 No boxes currently in the system.")
@@ -263,13 +265,15 @@ else:
                 location_data = []
                 for module_iri, box_iris in sorted(box_locations.items()):
                     for box_iri in box_iris:
-                        location_data.append({
-                            "Module": module_iri,
-                            "Box": box_iri,
-                        })
+                        location_data.append(
+                            {
+                                "Module": module_iri,
+                                "Box": box_iri,
+                            }
+                        )
 
                 st.dataframe(location_data, use_container_width=True)
-           
+
         button_columns = st.columns(4)
         for index, discovered_module in enumerate(st.session_state.discovered_modules):
             module_id = discovered_module.get("module_id", "unknown module")
@@ -310,9 +314,13 @@ else:
             col_refresh, _ = st.columns([1, 3])
             with col_refresh:
                 if st.button(
-                    "Refresh modules", key="control_refresh_modules", use_container_width=True
+                    "Refresh modules",
+                    key="control_refresh_modules",
+                    use_container_width=True,
                 ):
-                    st.session_state.discovered_modules = control_module.discover_modules(ogm)
+                    st.session_state.discovered_modules = (
+                        control_module.discover_modules(ogm)
+                    )
 
             discovered = st.session_state.discovered_modules
 
@@ -322,7 +330,9 @@ else:
                     "Use the Bootstrap & Monitor tabs to create modules, then click 'Refresh modules'."
                 )
             else:
-                module_ids = [m.get("module_id", "") for m in discovered if m.get("module_id")]
+                module_ids = [
+                    m.get("module_id", "") for m in discovered if m.get("module_id")
+                ]
 
                 entry_module_id = st.selectbox(
                     "Entry module (where the box is first received)",
@@ -349,7 +359,9 @@ else:
                     ),
                 )
 
-                destination_iri = None if dest_choice == dest_options[0] else dest_choice
+                destination_iri = (
+                    None if dest_choice == dest_options[0] else dest_choice
+                )
 
                 # Look up the selected module's accessibleAt URL from the
                 # cached discovery result so we don't touch GraphDB/OGM on
@@ -358,7 +370,11 @@ else:
                     (m for m in discovered if m.get("module_id") == entry_module_id),
                     None,
                 )
-                entry_module_url = (selected_module or {}).get("accessible_at") if selected_module else None
+                entry_module_url = (
+                    (selected_module or {}).get("accessible_at")
+                    if selected_module
+                    else None
+                )
 
                 if st.button("Inject box", type="primary", key="control_inject_box"):
                     if not box_iri:
@@ -390,7 +406,9 @@ else:
                                 f"(HTTP {result.get('http_status')})."
                             )
                         else:
-                            st.error(result.get("error", "Unknown error during injection"))
+                            st.error(
+                                result.get("error", "Unknown error during injection")
+                            )
 
                         with st.expander("Request details", expanded=False):
                             st.json(
@@ -417,12 +435,18 @@ else:
 
                 if start_clicked:
                     if not destination_iri:
-                        st.error("Please select a destination module for visualization.")
+                        st.error(
+                            "Please select a destination module for visualization."
+                        )
                     else:
                         # Build or reuse adjacency map from the monitor helpers
                         if not st.session_state.get("adjacency_matrix"):
-                            monitor_module = importlib.import_module("utils.system_state_monitor")
-                            st.session_state.adjacency_matrix = monitor_module.build_adjacency_matrix(ogm)
+                            monitor_module = importlib.import_module(
+                                "utils.system_state_monitor"
+                            )
+                            st.session_state.adjacency_matrix = (
+                                monitor_module.build_adjacency_matrix(ogm)
+                            )
 
                         adj_map = st.session_state.adjacency_matrix
                         graph = route_module.build_topology_graph(adj_map)
@@ -433,7 +457,9 @@ else:
                         )
 
                         if not route or len(route) < 2:
-                            st.error("No valid route found between the selected modules.")
+                            st.error(
+                                "No valid route found between the selected modules."
+                            )
                             st.session_state.simulation_route = []
                             st.session_state.simulation_step_index = 0
                         else:
@@ -441,9 +467,10 @@ else:
                             st.session_state.simulation_step_index = 0
 
                 if step_clicked and st.session_state.simulation_route:
-                    if st.session_state.simulation_step_index < len(
-                        st.session_state.simulation_route
-                    ) - 1:
+                    if (
+                        st.session_state.simulation_step_index
+                        < len(st.session_state.simulation_route) - 1
+                    ):
                         st.session_state.simulation_step_index += 1
 
                 if stop_clicked:
@@ -463,8 +490,10 @@ else:
                     )
                 else:
                     if not st.session_state.get("directional_rows"):
-                        st.session_state.directional_rows = topology_module.adjacency_map_to_directional_rows(
-                            st.session_state.adjacency_matrix
+                        st.session_state.directional_rows = (
+                            topology_module.adjacency_map_to_directional_rows(
+                                st.session_state.adjacency_matrix
+                            )
                         )
 
                     if st.session_state.directional_rows:

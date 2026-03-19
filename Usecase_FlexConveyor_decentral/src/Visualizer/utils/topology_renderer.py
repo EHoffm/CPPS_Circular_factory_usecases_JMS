@@ -94,7 +94,10 @@ def modules_payload_to_adjacency_map(
 
 
 def adjacency_map_to_directional_rows(
-    adjacency_map: dict[str | IRI, list[tuple[str | IRI | None, str | None]]] | list[dict[str, Any]],
+    adjacency_map: (
+        dict[str | IRI, list[tuple[str | IRI | None, str | None]]]
+        | list[dict[str, Any]]
+    ),
 ) -> list[list[IRI | int]]:
     """Convert adjacency data to [module, up, right, down, left] rows.
 
@@ -109,11 +112,15 @@ def adjacency_map_to_directional_rows(
         normalized_map = modules_payload_to_adjacency_map(adjacency_map)
     else:
         for module_id, entries in adjacency_map.items():
-            module_iri = module_id if isinstance(module_id, IRI) else IRI(str(module_id))
+            module_iri = (
+                module_id if isinstance(module_id, IRI) else IRI(str(module_id))
+            )
             normalized_entries: list[tuple[IRI | None, str | None]] = []
             for target, direction in entries:
                 target_iri = (
-                    target if isinstance(target, IRI) else IRI(str(target)) if target else None
+                    target
+                    if isinstance(target, IRI)
+                    else IRI(str(target)) if target else None
                 )
                 normalized_entries.append((target_iri, direction))
             normalized_map[module_iri] = normalized_entries
@@ -160,7 +167,9 @@ def _build_nodes_from_directional_rows(
             if neighbor_id == 0 or neighbor_id is None:
                 continue
 
-            neighbor_iri = neighbor_id if isinstance(neighbor_id, IRI) else IRI(str(neighbor_id))
+            neighbor_iri = (
+                neighbor_id if isinstance(neighbor_id, IRI) else IRI(str(neighbor_id))
+            )
             neighbor_key = str(neighbor_iri)
             if neighbor_key not in nodes_by_id:
                 nodes_by_id[neighbor_key] = FlexConveyorNode(neighbor_iri)
@@ -175,7 +184,11 @@ def _build_nodes_from_directional_rows(
             else:
                 current_node.left_connected_module = neighbor_node
 
-    return [nodes_by_id[str(row[0] if isinstance(row[0], IRI) else IRI(str(row[0])))] for row in directional_rows if row]
+    return [
+        nodes_by_id[str(row[0] if isinstance(row[0], IRI) else IRI(str(row[0])))]
+        for row in directional_rows
+        if row
+    ]
 
 
 def _layout_nodes(nodes: list[FlexConveyorNode]) -> None:
@@ -215,7 +228,10 @@ def _layout_nodes(nodes: list[FlexConveyorNode]) -> None:
             if neighbor is None or neighbor in positioned:
                 continue
             delta_x, delta_y = deltas[index]
-            positioned[neighbor] = (current_x + delta_x * width, current_y + delta_y * height)
+            positioned[neighbor] = (
+                current_x + delta_x * width,
+                current_y + delta_y * height,
+            )
             queueing.append(neighbor)
 
 
@@ -248,7 +264,9 @@ def directional_rows_to_figure(directional_rows: list[list[IRI | int]]):
         ax.set_axis_off()
         return fig
 
-    min_x, max_x, min_y, max_y, padding, fig_width, fig_height = _compute_figure_geometry(nodes)
+    min_x, max_x, min_y, max_y, padding, fig_width, fig_height = (
+        _compute_figure_geometry(nodes)
+    )
     fig.set_size_inches(fig_width, fig_height)
 
     for node in nodes:
@@ -305,7 +323,9 @@ def directional_rows_to_figure_with_box(
         ax.set_axis_off()
         return fig
 
-    min_x, max_x, min_y, max_y, padding, fig_width, fig_height = _compute_figure_geometry(nodes)
+    min_x, max_x, min_y, max_y, padding, fig_width, fig_height = (
+        _compute_figure_geometry(nodes)
+    )
     fig.set_size_inches(fig_width, fig_height)
 
     box_module_str = str(box_module_iri) if box_module_iri is not None else None
