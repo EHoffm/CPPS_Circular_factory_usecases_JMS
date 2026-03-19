@@ -713,7 +713,7 @@ class FlexConveyor:
 
         Source module performs the full ownership transfer:
         remove ownership from source and assign ownership to destination,
-        then calls destination module `receive`.
+        then triggers destination module `receive` asynchronously.
 
         Args:
             box_iri: IRI of the parcel being transferred.
@@ -776,35 +776,38 @@ class FlexConveyor:
         )
         print(f"  ✓ Box ownership transferred: {self.module_id} → {destination_module}")
 
-        # Step 5: call receive on destination module
+        # Step 5: trigger receive on destination module asynchronously
         receive_url = f"{destination_module_url}/workflows/receive/execute"
-        print(f"  📡 Calling destination receive: {receive_url}")
-        response = requests.post(
-            receive_url,
-            json={"box_iri": str(box)},
-            timeout=None,
-        )
+        print(f"  📡 Triggering destination receive in background: {receive_url}")
 
-        if response.status_code >= 400:
-            print(f"  ❌ Destination receive failed with HTTP {response.status_code}")
-            return {
-                "status": "conveyed_receive_failed",
-                "module": str(self.module_id),
-                "box": str(box),
-                "to_module": str(destination_module),
-                "http_status": response.status_code,
-                "http_text": response.text,
-            }
+        def _call_receive_in_background() -> None:
+            try:
+                response = requests.post(
+                    receive_url,
+                    json={"box_iri": str(box)},
+                    timeout=None,
+                )
+                if response.status_code >= 400:
+                    print(
+                        f"  ❌ Background destination receive failed with HTTP {response.status_code}: {response.text}"
+                    )
+                else:
+                    print("  ✓ Background destination receive succeeded")
+            except Exception as e:
+                print(f"  ❌ Background destination receive exception: {e}")
 
-        receive_result = response.json() if response.text else {}
-        print(f"  ✓ Destination receive succeeded")
+        threading.Thread(
+            target=_call_receive_in_background,
+            daemon=True,
+            name=f"ReceiveTrigger-{self.module_id}-to-{destination_module}",
+        ).start()
 
         return {
-            "status": "conveyed",
+            "status": "conveyed_receive_started",
             "module": str(self.module_id),
             "box": str(box),
             "to_module": str(destination_module),
-            "receive": receive_result,
+            "receive": {"status": "started_async"},
         }
 
     def receive(self, box_iri: str, destination_iri: str | None = None) -> dict:
