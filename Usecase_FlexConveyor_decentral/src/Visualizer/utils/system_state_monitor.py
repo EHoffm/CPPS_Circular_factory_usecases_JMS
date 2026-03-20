@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from circular_factory_ogm.ogm import OGM
-from circular_factory_ogm.utils.class_scope import ClassScope
+from kapps_ogm import OGM
+from kapps_ogm import ClassScope
 from graph_db_interface import IRI, GraphDB
 
 
@@ -12,7 +12,9 @@ def build_adjacency_matrix(ogm: OGM) -> dict[str, list[tuple[str | None, str | N
     adj: dict[str, list[tuple[str | None, str | None]]] = {}
 
     rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-    module_class = IRI("http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule")
+    module_class = IRI(
+        "http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule"
+    )
     has_connection = IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection")
     connects_to = IRI("http://w3id.org/circularfactory/FlexConveyor#connectsTo")
     has_direction = IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection")
@@ -104,7 +106,9 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
         print("No instantiated modules found")
         return discovered
 
-    has_service_key = IRI("http://w3id.org/circularfactory/FlexConveyor#hasService").lined
+    has_service_key = IRI(
+        "http://w3id.org/circularfactory/FlexConveyor#hasService"
+    ).lined
     accessible_at_key = IRI(
         "http://w3id.org/circularfactory/FlexConveyor#accessibleAt"
     ).lined
@@ -123,7 +127,7 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
             [
                 IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
                 IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection"),
-            ]
+            ],
         ]
         module_service = ogm.fetch(
             instance_iri=module,
@@ -148,9 +152,6 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
             if accessible_at:
                 break
 
-        discovered.append(
-            {"module_id": str(module), "accessible_at": accessible_at}
-        )
+        discovered.append({"module_id": str(module), "accessible_at": accessible_at})
 
     return discovered
-

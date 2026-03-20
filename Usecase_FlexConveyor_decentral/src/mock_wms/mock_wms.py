@@ -6,6 +6,7 @@ import time
 import random
 from streamlit import st
 
+from graph_db_interface import IRI
 from kapps_ogm import OGM
 
 
@@ -18,17 +19,32 @@ def generate_box(ogm: OGM):
         interval_seconds: Time interval in seconds between box generations
     """
     # Query GraphDB for free FlexConveyor modules
-    modules = st.session_state.get("modules", [])
+    discovered_modules = st.session_state.get("discovered_modules", [])
     free_modules = []
-    # TODO: hier noch mit discover_modules die info holen, ob das modul gerade für
-    # hasPossession eine Box hat, wenn ja dann nicht in free_modules hinzufügen,
-    # wenn keine Box in free_modules hinzufügen
+    property_possession = IRI(
+        "http://w3id.org/circularfactory/FlexConveyor#hasPossession"
+    )
+    # add module to the list of free modules, if the module has no value for hasPossession (no Box on it)
+    for module in discovered_modules:
+        triples = ogm.db.triples_get(
+            subj=IRI(module["module_id"]), pred=property_possession
+        )
+
+        has_value = len(triples) > 0
+        value = str(triples[0][2]) if has_value else None
+        if value == None:
+            free_modules.append(module)
+        print(f"Tripel: {triples}, has_value: {has_value}, value: {value}")
+
+    print(f"Module:{discovered_modules}")
+    print(f"freie Module:{free_modules}")
+
     if not free_modules:
         print("No free FlexConveyor modules available. Retrying...")
-
-    # Randomly select a start and end module from the free modules
-    start_module = random.choice(free_modules)
-    end_module = random.choice([m for m in free_modules if m != start_module])
+    else:
+        # Randomly select a start and end module from the free modules
+        start_module = random.choice(free_modules)
+        end_module = random.choice([m for m in discovered_modules if m != start_module])
 
     # Generate a box on the start module and set it to move to the end module
     # TODO: erzeuge Box instanz mit den start_module und end_module daten und
