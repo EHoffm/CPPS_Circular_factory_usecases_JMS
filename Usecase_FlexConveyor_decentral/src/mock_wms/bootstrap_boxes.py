@@ -106,10 +106,10 @@ def instantiate_boxes(boxes: List[Dict[str, Any]], ogm: OGM) -> List[Dict[str, A
 
             try:
                 # Create box node in the knowledge graph
-                # TODO: hier Werte anpassen
+                # TODO: sicher stellen, dass hier die richtigen Werte ankommen
                 print("  → Creating in knowledge graph...")
                 node = ogm.create(
-                    class_iri=IRI("http://example.org/Box"),  # adjust to your ontology
+                    class_iri=IRI("http://w3id.org/circularfactory/FlexConveyor#Box"),
                     instance_iri=box_iri,
                     data=box_data,
                     persist=True,
@@ -125,7 +125,7 @@ def instantiate_boxes(boxes: List[Dict[str, Any]], ogm: OGM) -> List[Dict[str, A
                     "box_id": str(node.id),
                     "hasOrigin": origin,  # TODO: hier origin und destination die module_iris
                     "hasDestination": destination,
-                    "status": "created",
+                    "status": boxstate_created,
                 }
                 results.append(result)
 
