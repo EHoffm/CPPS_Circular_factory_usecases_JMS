@@ -40,6 +40,10 @@ def _bootstrap_import_paths() -> None:
 
 _bootstrap_import_paths()
 
+# TODO: change the import path local for mock_wms to a generally functioning one
+from CPPS_Circular_factory_usecases_JMS.Usecase_FlexConveyor_decentral.src.mock_wms.mock_wms import (
+    render_box_instantiation,
+)
 from utils.bootstrap import register_shutdown_handlers
 from utils import (
     initialize_login_session_state,
@@ -169,6 +173,7 @@ else:
                 else:
                     st.error("Failed to clear knowledge graph.")
             render_flex_module_instantiation(ogm)
+            render_box_instantiation(ogm)
 
     elif section == "📊 Monitor":
         st.header("Runtime Monitoring")
@@ -191,9 +196,7 @@ else:
                 st.session_state.get("ogm")
             )
 
-        if action_col2.button(
-            "build adjacency matrix", key="build_adjacency_matrix"
-        ):
+        if action_col2.button("build adjacency matrix", key="build_adjacency_matrix"):
             monitor_module = importlib.import_module("utils.system_state_monitor")
             st.session_state.adjacency_matrix = monitor_module.build_adjacency_matrix(
                 st.session_state.get("ogm")
@@ -228,7 +231,9 @@ else:
             if st.session_state.topology_image_png:
                 left_col, center_col, right_col = st.columns([0.2, 0.6, 0.2])
                 with center_col:
-                    st.image(st.session_state.topology_image_png, use_container_width=True)
+                    st.image(
+                        st.session_state.topology_image_png, use_container_width=True
+                    )
 
             if st.session_state.directional_rows:
                 st.caption("Adjacency Matrix ")
@@ -249,7 +254,7 @@ else:
                     for row in st.session_state.directional_rows
                 ]
                 st.dataframe(topology_table, use_container_width=True)
-           
+
         button_columns = st.columns(4)
         for index, discovered_module in enumerate(st.session_state.discovered_modules):
             module_id = discovered_module.get("module_id", "unknown module")

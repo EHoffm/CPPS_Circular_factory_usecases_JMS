@@ -4,7 +4,7 @@
 
 import time
 import random
-from streamlit import st
+import streamlit as st
 
 from graph_db_interface import IRI
 from kapps_ogm import OGM
