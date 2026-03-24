@@ -340,7 +340,10 @@ else:
 
                 box_iri = st.text_input(
                     "Box IRI",
-                    value=st.session_state.get("control_box_iri", ""),
+                    value=st.session_state.get(
+                        "control_box_iri",
+                        "http://w3id.org/circularfactory/FlexConveyorInstances#Box1",
+                    ),
                     key="control_box_iri",
                     help="Full IRI of the box to inject into the system.",
                 )

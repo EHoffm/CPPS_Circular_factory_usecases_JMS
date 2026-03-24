@@ -135,7 +135,7 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
             locations = service.get(accessible_at_key, [])
             if not locations:
                 continue
-            first_location = locations[0]
+            first_location = locations[0].split("workflows")[0]
             if isinstance(first_location, dict):
                 accessible_at = first_location.get("id")
             else:

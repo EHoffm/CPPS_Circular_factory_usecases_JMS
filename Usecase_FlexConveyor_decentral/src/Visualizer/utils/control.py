@@ -62,6 +62,18 @@ def _setup_box_ownership(
                 named_graph=named_graph,
             )
 
+        # Set box status to "inTransit"
+        hasState = IRI(f"{FC}hasState")
+        inTransit = IRI(f"{FC}InTransit")
+        state = ogm.db.triples_get(sub=box, pred=hasState)
+        if state:
+            ogm.db.triples_delete(state, check_exist=False, named_graph=named_graph)
+        ogm.db.triples_add(
+            [(box, hasState, inTransit)],
+            check_exist=False,
+            named_graph=named_graph,
+        )
+
         # Remove from any previous owner
         old_possessions = ogm.db.triples_get(pred=has_possession, obj=box)
         if old_possessions:
@@ -104,6 +116,10 @@ def inject_box_via_url(
     Sets up ownership in the knowledge graph first, then calls receive
     workflow on the entry module.
     """
+    FC = "http://w3id.org/circularfactory/FlexConveyor#"
+    INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
+    named_graph = IRI(INST)
+    has_destination = IRI(f"{FC}hasDestination")
 
     entry_module_url = (entry_module_url or "").strip()
     if not entry_module_url:
@@ -122,9 +138,19 @@ def inject_box_via_url(
     base_url = entry_module_url.rstrip("/")
     receive_url = f"{base_url}/workflows/receive/execute"
 
-    payload: Dict[str, Any] = {"box_iri": box_iri}
     if destination_iri:
-        payload["destination_iri"] = destination_iri
+        old_destination = ogm.db.triples_get(sub=box_iri, pred=has_destination)
+        if old_destination:
+            ogm.db.triples_delete(
+                old_destination, check_exist=False, named_graph=named_graph
+            )
+        ogm.db.triples_add(
+            [(box_iri, has_destination, IRI(destination_iri))],
+            check_exist=False,
+            named_graph=named_graph,
+        )
+
+    payload: Dict[str, Any] = {"box_iri": box_iri}
 
     try:
         response = requests.post(receive_url, json=payload, timeout=timeout)
