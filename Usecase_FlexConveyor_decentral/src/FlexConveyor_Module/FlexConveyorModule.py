@@ -6,8 +6,8 @@ import uvicorn
 import aas_middleware as aas
 from graph_db_interface.utils.iri import IRI
 
-from circular_factory_ogm.ogm import OGM
-from circular_factory_ogm.utils.class_scope import ClassScope
+from kapps_ogm import OGM
+from kapps_ogm import ClassScope
 
 
 class FlexConveyor:
@@ -134,13 +134,11 @@ class FlexConveyor:
         print(f"  Accessible at: {self.url}")
         print(f"  GUI access: http://localhost:{self.port}/docs")
         print(f"{'='*70}\n")
-        
+
         self._register_service_in_knowledge_graph()
         adjacency_matrix = self.discover_connections_and_services()
         print("Adjacency matrix:")
         print(pformat(adjacency_matrix))
-        
-
 
     def _run_server(self):
         """Run the uvicorn server for this middleware instance."""
@@ -250,16 +248,9 @@ class FlexConveyor:
             "http://w3id.org/circularfactory/FlexConveyor#hasConnection"
         )
         connects_to = IRI("http://w3id.org/circularfactory/FlexConveyor#connectsTo")
-        has_direction = IRI(
-            "http://w3id.org/circularfactory/FlexConveyor#hasDirection"
-        )
-        has_service = IRI(
-            "http://w3id.org/circularfactory/FlexConveyor#hasService"
-        )
-        accessible_at = IRI(
-            "http://w3id.org/circularfactory/FlexConveyor#accessibleAt"
-        )
-        
+        has_direction = IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection")
+        has_service = IRI("http://w3id.org/circularfactory/FlexConveyor#hasService")
+        accessible_at = IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt")
 
         triples = self.ogm.db.triples_get(pred=rdf_type, obj=module_class)
         modules = [triple[0] for triple in triples]
@@ -322,7 +313,9 @@ class FlexConveyor:
 
                 adjacency_entries.append((target, direction))
 
-            module_key = module_iri if isinstance(module_iri, IRI) else IRI(str(module_iri))
+            module_key = (
+                module_iri if isinstance(module_iri, IRI) else IRI(str(module_iri))
+            )
             adj_map[module_key] = adjacency_entries
 
             services = module_data.get(has_service_key, [])
@@ -361,7 +354,6 @@ class FlexConveyor:
         self.adj = directional_rows
         self.accessible_at_by_module = accessible_at_map
         return self.adj
-
 
     def receive(
         self,

@@ -4,6 +4,29 @@ import signal
 from typing import List, Any, Optional, Dict
 from graph_db_interface import IRI
 from kapps_ogm import OGM, ClassScope
+from pydantic import BaseModel
+
+# Define property chains for boxes
+BOX_PROPERTY_CHAINS = [
+    [
+        IRI("http://w3id.org/circularfactory/FlexConveyor#hasOrigin"),
+    ],
+    [
+        IRI("http://w3id.org/circularfactory/FlexConveyor#hasDestination"),
+    ],
+    [
+        IRI("http://w3id.org/circularfactory/FlexConveyor#hasState"),
+    ],
+    [
+        IRI("http://w3id.org/circularfactory/FlexConveyor#isPossessedBy"),
+    ],
+]
+BOX_CLASS_SCOPE = ClassScope.from_property_chains(BOX_PROPERTY_CHAINS)
+BOX_CLASS_IRI = IRI("http://w3id.org/circularfactory/FlexConveyor#Box")
+BOX_DEFAULT_INSTANCE_IRI = IRI(
+    "http://w3id.org/circularfactory/FlexConveyor#TemporaryBox"
+)
+BOX_INSTANCES_GRAPH_IRI = IRI("http://w3id.org/circularfactory/BoxInstances")
 
 # --- Global tracking for instantiated boxes ---
 _running_boxes: list[Any] = []
@@ -85,24 +108,8 @@ def instantiate_boxes(boxes: List[Dict[str, Any]], ogm: OGM) -> List[Dict[str, A
     Returns:
         List of instantiation results
     """
+    print("entered instantiate_boxes")
     register_box_shutdown_handlers()
-
-    # Define property chains for boxes
-    property_chains = [
-        [
-            IRI("http://w3id.org/circularfactory/FlexConveyor#hasOrigin"),
-        ],
-        [
-            IRI("http://w3id.org/circularfactory/FlexConveyor#hasDestination"),
-        ],
-        [
-            IRI("http://w3id.org/circularfactory/FlexConveyor#hasState"),
-        ],
-        [
-            IRI("http://w3id.org/circularfactory/FlexConveyor#isPossessedBy"),
-        ],
-    ]
-    class_scope = ClassScope.from_property_chains(property_chains)
 
     print("\n" + "=" * 70)
     print("📦 Instantiating Boxes")
@@ -126,30 +133,30 @@ def instantiate_boxes(boxes: List[Dict[str, Any]], ogm: OGM) -> List[Dict[str, A
                 # TODO: sicher stellen, dass hier die richtigen Werte ankommen
                 print("  → Creating in knowledge graph...")
                 node = ogm.create(
-                    class_iri=IRI("http://w3id.org/circularfactory/FlexConveyor#Box"),
-                    class_scope=class_scope,
+                    class_iri=BOX_CLASS_IRI,
+                    class_scope=BOX_CLASS_SCOPE,
                     instance_iri=box_iri,
                     data=box_data,
                     persist=True,
-                    named_graph=IRI("http://w3id.org/circularfactory/BoxInstances"),
+                    named_graph=BOX_INSTANCES_GRAPH_IRI,
                 )
                 print("  ✓ Created successfully")
-                
+
                 # Track box instance (for cleanup / bookkeeping)
                 with _running_boxes_lock:
                     _running_boxes.append(node)
 
                 # Store result
-                #TODO
+                # TODO hier Werte noch anpassen in result
                 origin = str(node.hasOrigin)
-                #boxstate_created = 
+                # boxstate_created =
                 #
                 result = {
                     "box_id": str(node.id),
-                    "hasOrigin": origin,  # TODO: hier origin und destination die module_iris
-                    "hasDestination": destination,
-                    "status": boxstate_created,
-                    "isPossessedBy": 
+                    "hasOrigin": "ModulIRITemp",  # TODO: hier origin und destination die module_iris
+                    "hasDestination": "ModulIRITemp2",
+                    "status": "created",
+                    "isPossessedBy": "ModulIRITemp",
                 }
                 results.append(result)
 
@@ -184,3 +191,29 @@ def instantiate_boxes(boxes: List[Dict[str, Any]], ogm: OGM) -> List[Dict[str, A
         print(f"\n✗ Fatal error during box instantiation: {str(e)}")
         stop_all_boxes()
         raise
+
+
+def create_blank_box_instance(
+    ogm: OGM, instance_iri: Optional[IRI] = None
+) -> BaseModel:
+    """
+    Create a blank FlexConveyor module instance from the ontology.
+
+    Args:
+        ogm: The OGM instance connected to GraphDB
+        instance_iri: Optional custom instance IRI (uses default if not provided)
+
+    Returns:
+        BaseModel: A pydantic model instance with blank values conforming to the ontology
+    """
+    if instance_iri is None:
+        instance_iri = BOX_DEFAULT_INSTANCE_IRI
+
+    # Create blank instance
+    blank_instance = ogm.create_blank_instance(
+        instance_iri=instance_iri,
+        class_iri=BOX_CLASS_IRI,
+        class_scope=BOX_CLASS_SCOPE,
+    )
+
+    return blank_instance
