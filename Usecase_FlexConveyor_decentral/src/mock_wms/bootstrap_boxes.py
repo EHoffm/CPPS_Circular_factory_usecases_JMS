@@ -3,7 +3,7 @@ import atexit
 import signal
 from typing import List, Any, Optional, Dict
 from graph_db_interface import IRI
-from kapps_ogm import OGM
+from kapps_ogm import OGM, ClassScope
 
 # --- Global tracking for instantiated boxes ---
 _running_boxes: list[Any] = []
@@ -87,6 +87,23 @@ def instantiate_boxes(boxes: List[Dict[str, Any]], ogm: OGM) -> List[Dict[str, A
     """
     register_box_shutdown_handlers()
 
+    # Define property chains for boxes
+    property_chains = [
+        [
+            IRI("http://w3id.org/circularfactory/FlexConveyor#hasOrigin"),
+        ],
+        [
+            IRI("http://w3id.org/circularfactory/FlexConveyor#hasDestination"),
+        ],
+        [
+            IRI("http://w3id.org/circularfactory/FlexConveyor#hasState"),
+        ],
+        [
+            IRI("http://w3id.org/circularfactory/FlexConveyor#isPossessedBy"),
+        ],
+    ]
+    class_scope = ClassScope.from_property_chains(property_chains)
+
     print("\n" + "=" * 70)
     print("📦 Instantiating Boxes")
     print("=" * 70)
@@ -110,22 +127,29 @@ def instantiate_boxes(boxes: List[Dict[str, Any]], ogm: OGM) -> List[Dict[str, A
                 print("  → Creating in knowledge graph...")
                 node = ogm.create(
                     class_iri=IRI("http://w3id.org/circularfactory/FlexConveyor#Box"),
+                    class_scope=class_scope,
                     instance_iri=box_iri,
                     data=box_data,
                     persist=True,
+                    named_graph=IRI("http://w3id.org/circularfactory/BoxInstances"),
                 )
                 print("  ✓ Created successfully")
-
+                
                 # Track box instance (for cleanup / bookkeeping)
                 with _running_boxes_lock:
                     _running_boxes.append(node)
 
                 # Store result
+                #TODO
+                origin = str(node.hasOrigin)
+                #boxstate_created = 
+                #
                 result = {
                     "box_id": str(node.id),
                     "hasOrigin": origin,  # TODO: hier origin und destination die module_iris
                     "hasDestination": destination,
                     "status": boxstate_created,
+                    "isPossessedBy": 
                 }
                 results.append(result)
 
