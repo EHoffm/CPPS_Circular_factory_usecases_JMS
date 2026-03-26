@@ -39,7 +39,11 @@ def _bootstrap_import_paths() -> None:
 
 _bootstrap_import_paths()
 
-from utils.bootstrap import register_shutdown_handlers
+from utils.bootstrap import (
+    register_shutdown_handlers,
+    instantiate_modules,
+    instantiate_wms,
+)
 from utils import (
     initialize_login_session_state,
     render_login_sidebar,
@@ -147,6 +151,45 @@ else:
         )
     else:
         st.warning("✅ Connected to GraphDB - OGM not initialized")
+
+    # Handle instantiation request (runs regardless of active tab)
+    if st.session_state.get("instantiation_requested", False):
+        ogm = get_ogm()
+        if ogm is None:
+            st.error("❌ OGM instance not found in session state.")
+            st.session_state.instantiation_requested = False
+        else:
+            # Clear flag before instantiation
+            st.session_state.instantiation_requested = False
+
+            # Instantiate modules first
+            with st.spinner("⚙️ Instantiating modules..."):
+                module_results = instantiate_modules(st.session_state.modules, ogm)
+
+            # Check if any modules were successfully instantiated
+            running_modules = [
+                r for r in module_results if r.get("status") == "running"
+            ]
+
+            if running_modules:
+                st.success(
+                    f"✅ {len(running_modules)}/{len(st.session_state.modules)} modules instantiated successfully!"
+                )
+
+                # Instantiate WMS after modules
+                with st.spinner("🏭 Instantiating WMS..."):
+                    wms_result = instantiate_wms(ogm)
+
+                if wms_result.get("status") == "running":
+                    st.success("✅ MockWMS instantiated successfully!")
+                else:
+                    st.warning(
+                        f"⚠️ WMS instantiation failed: {wms_result.get('error', 'Unknown error')}"
+                    )
+            else:
+                st.error(
+                    "❌ No modules were successfully instantiated. WMS not started."
+                )
 
     section = st.radio(
         "Section",
