@@ -11,10 +11,10 @@ from streamlit_autorefresh import st_autorefresh
 from graph_db_interface import IRI
 from kapps_ogm import OGM
 
-from CPPS_Circular_factory_usecases_JMS.Usecase_FlexConveyor_decentral.src.Visualizer.utils.flex_module_instance import (
+from ..Visualizer.utils.flex_module_instance import (
     extract_fields_from_instance,
 )
-from CPPS_Circular_factory_usecases_JMS.Usecase_FlexConveyor_decentral.src.mock_wms.bootstrap_boxes import (
+from ..mock_wms.bootstrap_boxes import (
     create_blank_box_instance,
     instantiate_boxes,
 )

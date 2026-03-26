@@ -29,12 +29,12 @@ classifiers = [
 packages = [{include = "jms_usecase_2"}]
 
 [tool.poetry.dependencies]
-python = "3.13.11"
-graph-db-interface = "*"
+python = "^3.12"
 streamlit = "^1.28.0"
+streamlit-autorefresh = "^1.0.1"
 matplotlib = "^3.7.0"
-graph_db_interface = {git = "https://gitlab.kit.edu/kit/ifl/opensource/circular_factory/inf/semantic_middleware_dev/graph_db_interface.git"}
-circular_factory_ogm = {git = "https://gitlab.kit.edu/kit/ifl/opensource/circular_factory/inf/circular_factory_ogm.git", branch = "prep_release"}
+graph_db_interface = {git = "git@gitlab.kit.edu:kit/ifl/opensource/circular_factory/inf/semantic_middleware_dev/graph_db_interface.git"}
+kapps-ogm = {git = "git@gitlab.kit.edu:kit/ifl/opensource/circular_factory/inf/circular_factory_ogm.git"}
 
 
 [tool.poetry.group.dev.dependencies]

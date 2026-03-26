@@ -39,7 +39,7 @@ def render_connection_status():
     """Render the connection status and disconnect button."""
     if st.session_state.graphdb_connected:
         st.success("✅ Connected to GraphDB")
-        if st.button("Disconnect", use_container_width=True):
+        if st.button("Disconnect", width="stretch"):
             st.session_state.graphdb_credentials = None
             st.session_state.graphdb_connected = False
             st.session_state.ogm = None
@@ -91,7 +91,7 @@ def render_manual_login():
     st.session_state.temp_password = password
 
     # Connect Button (Manual entry)
-    if st.button("Connect to GraphDB", use_container_width=True, type="primary"):
+    if st.button("Connect to GraphDB", width="stretch", type="primary"):
         # Validate inputs
         if not base_url or not repository or not username or not password:
             st.error("❌ Please fill in all fields")
@@ -128,7 +128,7 @@ def render_env_login():
     """Render login from environment variables button and repository selector."""
     st.subheader("Or use environment variables")
 
-    if st.button("Login from env", use_container_width=True):
+    if st.button("Login from env", width="stretch"):
         try:
             # Create initial credentials from environment
             credentials = GraphDBCredentials.from_env()
@@ -164,7 +164,7 @@ def render_env_login():
         col1, col2 = st.columns(2)
 
         with col1:
-            if st.button("Connect", use_container_width=True, type="primary"):
+            if st.button("Connect", width="stretch", type="primary"):
                 try:
                     # Create new credentials with selected repository
                     credentials = GraphDBCredentials(
@@ -196,7 +196,7 @@ def render_env_login():
                     st.error(f"❌ Connection failed: {str(e)}")
 
         with col2:
-            if st.button("Cancel", use_container_width=True):
+            if st.button("Cancel", width="stretch"):
                 st.session_state.show_repo_selector = False
                 st.session_state.available_repositories = []
                 st.session_state.temp_credentials = None
@@ -259,7 +259,7 @@ def render_connection_test():
     """Render connection test button (only visible when connected)."""
     st.divider()
     st.subheader("Connection Verification")
-    if st.button("Test Connection", use_container_width=True, type="secondary"):
+    if st.button("Test Connection", width="stretch", type="secondary"):
         test_connection()
 
 

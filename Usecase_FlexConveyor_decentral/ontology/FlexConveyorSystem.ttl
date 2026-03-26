@@ -1,4 +1,5 @@
 @prefix : <http://w3id.org/circularfactory/FlexConveyor#> .
+@prefix cfc: <http://www.sfb1574.kit.edu/core#> .
 @prefix domain: <> .
 @prefix kadi: <> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -14,10 +15,26 @@
 : rdf:type owl:Ontology .
 
 #################################################################
+# M2
+#################################################################
+
+:Service rdf:type owl:Class .
+
+:hasService rdf:type owl:ObjectProperty ;
+    rdfs:domain cfc:Resource ;
+    rdfs:range :Service .
+
+:isServiceOf rdf:type owl:ObjectProperty ;
+    owl:inverseOf :hasService ;
+    rdfs:domain :Service ;
+    rdfs:range cfc:Resource .
+
+#################################################################
 # Classes
 #################################################################
 
-:FlexConveyorModule rdf:type owl:Class .
+:FlexConveyorModule rdf:type owl:Class ;
+    rdfs:subClassOf cfc:Resource .
 
 :EntryModule rdf:type owl:Class ;
     rdfs:subClassOf :FlexConveyorModule .
@@ -29,7 +46,14 @@
 
 :Connection rdf:type owl:Class .
 
-:Service rdf:type owl:Class .
+:ReserveService rdf:type owl:Class ;
+    rdfs:subClassOf :Service .
+
+:ConveyService rdf:type owl:Class ;
+    rdfs:subClassOf :Service .
+
+:ReceiveService rdf:type owl:Class ;
+    rdfs:subClassOf :Service .
 
 :BoxState rdf:type owl:Class .
 
@@ -89,15 +113,6 @@
 :hasDirection rdf:type owl:ObjectProperty ;
     rdfs:domain :Connection ;
     rdfs:range :Direction .
-
-:hasService rdf:type owl:ObjectProperty ;
-    rdfs:domain :FlexConveyorModule ;
-    rdfs:range :Service .
-
-:isServiceOf rdf:type owl:ObjectProperty ;
-    owl:inverseOf :hasService ;
-    rdfs:domain :Service ;
-    rdfs:range :FlexConveyorModule .
 
 #################################################################
 # Datatype Properties
