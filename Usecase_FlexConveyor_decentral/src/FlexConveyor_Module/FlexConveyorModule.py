@@ -781,7 +781,8 @@ class FlexConveyor:
             }
 
         if destination_iri == self.module_id:
-            self.WMS_accept_delivery(str(box_iri))
+            # Transfer to WMS and call WMS's accept_box workflow
+            self._deliver_to_wms(str(box_iri))
 
             return {
                 "status": "delivered",
@@ -800,28 +801,51 @@ class FlexConveyor:
             "routing": routing_result,
         }
 
-    def WMS_accept_delivery(self, box: str) -> dict:
+    def _deliver_to_wms(self, box_iri: str) -> dict:
+        """
+        Deliver a box to the WMS by transferring ownership and calling WMS's accept_box workflow.
+
+        Args:
+            box_iri: IRI of the box to deliver
+
+        Returns:
+            Result dictionary from WMS's accept_box workflow
+        """
+        from mock_wms.mock_wms import AcceptBoxPayload
+
         FC = "http://w3id.org/circularfactory/FlexConveyor#"
         INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
-        named_graph = IRI(INST)
-        has_state = IRI(f"{FC}hasState")
+        WMS_IRI = f"{INST}#WMS"
 
+        # Transfer ownership from this module to WMS
         self.WMS_transfer_ownership(
-            box,
+            box_iri,
             str(self.module_id),
-            f"{INST}#WMS",
+            WMS_IRI,
         )
 
-        success = self.ogm.db.triple_update(
-            old_triple=(box, has_state, IRI(f"{FC}InTransit")),
-            new_triple=(box, has_state, IRI(f"{FC}Delivered")),
-            named_graph=named_graph,
-        )
-        if not success:
-            print(
-                f"  ❌ Failed to update state to Delivered for box {box} at {self.module_id}"
+        # Call WMS's accept_box workflow
+        try:
+            wms_accept_service = Service.fetch_remote_service(
+                resource_instance=IRI(WMS_IRI),
+                service_class=f"{FC}AcceptBoxService",
+                payload_model=AcceptBoxPayload,
+                ogm=self.ogm,
             )
-        print(f"  ✅ Box {box} DELIVERED to destination {self.module_id}!")
+
+            response = wms_accept_service(AcceptBoxPayload(box_iri=box_iri))
+
+            if response.status_code >= 400:
+                print(f"  ❌ WMS accept_box workflow failed: {response.status_code}")
+                return {"status": "error", "error": f"HTTP {response.status_code}"}
+
+            result = response.json() if response.text else {}
+            print(f"  ✅ Box {box_iri} delivered to WMS!")
+            return result
+
+        except Exception as e:
+            print(f"  ❌ Error calling WMS accept_box workflow: {e}")
+            return {"status": "error", "error": str(e)}
 
     def WMS_transfer_ownership(
         self, box: str, origin_module: str, destination_module: str

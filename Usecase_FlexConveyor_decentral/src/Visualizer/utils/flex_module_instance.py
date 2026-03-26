@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from graph_db_interface.utils.iri import IRI
 from kapps_ogm import OGM, ClassScope
 
-from .bootstrap import instantiate_modules
+from .bootstrap import instantiate_modules, instantiate_wms
 
 
 # Hardcoded configuration for FlexConveyor modules
@@ -598,6 +598,9 @@ def initialize_flex_instance_session_state():
     if "last_uploaded_file" not in st.session_state:
         st.session_state.last_uploaded_file = None
 
+    if "instantiation_requested" not in st.session_state:
+        st.session_state.instantiation_requested = False
+
 
 def render_flex_module_instantiation(ogm: OGM):
     """
@@ -800,12 +803,9 @@ def render_flex_module_instantiation(ogm: OGM):
                         "❌ No modules to instantiate. Add at least one module first."
                     )
                 else:
-                    ogm = st.session_state.get("ogm")
-                    if ogm is None:
-                        st.error("❌ OGM instance not found in session state.")
-                    else:
-                        instantiate_modules(st.session_state.modules, ogm)
-                        st.success("✅ Modules instantiated successfully!")
+                    # Set flag to trigger instantiation (persists across tab switches)
+                    st.session_state.instantiation_requested = True
+                    st.rerun()
 
     # Show form if blank instance was created or editing
     if st.session_state.show_flex_form and st.session_state.flex_instance_fields:

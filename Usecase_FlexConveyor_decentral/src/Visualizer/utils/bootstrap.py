@@ -18,6 +18,8 @@ import aas_middleware as aas
 
 _running_modules: list[Any] = []
 _running_modules_lock = threading.Lock()
+_running_wms: Optional[Any] = None
+_running_wms_lock = threading.Lock()
 _shutdown_hooks_registered = False
 
 
@@ -136,10 +138,12 @@ def register_shutdown_handlers() -> None:
         return
 
     atexit.register(stop_all_modules)
+    atexit.register(stop_wms)
 
     def _signal_handler(signum: int, _frame: Optional[Any]) -> None:
         print(f"\n🛑 Received signal {signum}. Stopping all FlexConveyor modules...")
         stop_all_modules()
+        stop_wms()
         raise SystemExit(0)
 
     try:
@@ -176,6 +180,32 @@ def stop_all_modules() -> int:
     print(f"Stopped modules: {stopped_count}/{len(modules_to_stop)}")
     print("=" * 70 + "\n")
     return stopped_count
+
+
+def stop_wms() -> bool:
+    """Stop the running WMS instance."""
+    global _running_wms
+
+    with _running_wms_lock:
+        wms = _running_wms
+        _running_wms = None
+
+    if wms is None:
+        return False
+
+    print("\n" + "=" * 70)
+    print("🧹 Stopping MockWMS")
+    print("=" * 70)
+
+    try:
+        wms.stop()
+        print("✓ WMS stopped")
+        print("=" * 70 + "\n")
+        return True
+    except Exception as e:
+        print(f"✗ Error stopping WMS: {e}")
+        print("=" * 70 + "\n")
+        return False
 
 
 # Object properties whose values must be {"id": "..."} dicts, not plain strings.
@@ -405,3 +435,88 @@ def instantiate_modules(
         raise
 
     # Placeholder to show OGM state after instantiation
+
+
+def instantiate_wms(ogm: OGM, host: str = "localhost") -> dict[str, Any]:
+    """
+    Instantiate the Mock WMS into the system.
+
+    Must be called AFTER modules are instantiated since WMS needs modules to exist.
+
+    Args:
+        ogm: The OGM instance connected to GraphDB
+        host: Host to bind REST API server to (default: "localhost", use "0.0.0.0" for distributed)
+
+    Returns:
+        Dictionary with WMS instantiation result
+    """
+    global _running_wms
+
+    register_shutdown_handlers()
+
+    # Add src directory to Python path
+    src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+    if src_dir not in sys.path:
+        sys.path.insert(0, src_dir)
+
+    try:
+        # Import MockWMS class
+        wms_module = importlib.import_module("mock_wms.mock_wms")
+        wms_module = importlib.reload(wms_module)
+        MockWMS = wms_module.MockWMS
+
+        print("\n" + "=" * 70)
+        print("🏭 Instantiating Mock WMS")
+        print("=" * 70)
+
+        # Define WMS instance IRI and class
+        wms_iri = IRI("http://w3id.org/circularfactory/FlexConveyorInstances#WMS")
+        wms_class_iri = IRI("http://w3id.org/circularfactory/FlexConveyor#WarehouseManagementSystem")
+        named_graph_iri = IRI("http://w3id.org/circularfactory/FlexConveyorInstances")
+        rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+
+        # Register WMS instance in knowledge graph
+        print("  → Registering WMS in knowledge graph...")
+        try:
+            ogm.db.triples_add(
+                [(wms_iri, rdf_type, wms_class_iri)],
+                check_exist=False,
+                named_graph=named_graph_iri,
+            )
+            print("  ✓ WMS registered in knowledge graph")
+        except Exception as e:
+            print(f"  ⚠️  Could not register WMS: {e}")
+
+        # Initialize WMS
+        print("  → Initializing WMS...")
+        wms = MockWMS(ogm=ogm, host=host)
+        print("  ✓ WMS initialized")
+        time.sleep(1)
+
+        # Start the REST API server
+        print("  → Starting REST API server...")
+        wms.start()
+
+        with _running_wms_lock:
+            _running_wms = wms
+
+        result = {
+            "wms_id": str(wms.wms_id),
+            "status": "running",
+            "api_url": wms.get_api_url(),
+            "port": wms.port,
+        }
+
+        print(f"  ✓ Started at {result['api_url']}")
+        print("=" * 70 + "\n")
+
+        return result
+
+    except Exception as e:
+        print(f"\n✗ Fatal error during WMS instantiation: {str(e)}")
+        print("=" * 70 + "\n")
+        return {
+            "wms_id": "WMS",
+            "status": "failed",
+            "error": str(e),
+        }

@@ -71,6 +71,10 @@ class Service:
         service_url = services[0]
 
         def remote_method(payload: BaseModel):
+            if not isinstance(payload, payload_model):
+                raise ValueError(
+                    f"Invalid payload type, expected {payload_model}, got {type(payload)}"
+                )
             return requests.post(
                 service_url,
                 json=payload.model_dump(),

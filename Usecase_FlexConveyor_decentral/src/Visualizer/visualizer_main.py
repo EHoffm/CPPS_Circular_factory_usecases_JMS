@@ -39,7 +39,6 @@ def _bootstrap_import_paths() -> None:
 
 _bootstrap_import_paths()
 
-from ..mock_wms.mock_wms import render_box_instantiation
 from utils.bootstrap import register_shutdown_handlers
 from utils import (
     initialize_login_session_state,
@@ -169,7 +168,12 @@ else:
                 else:
                     st.error("Failed to clear knowledge graph.")
             render_flex_module_instantiation(ogm)
-            render_box_instantiation(ogm)
+
+            st.divider()
+            st.info(
+                "ℹ️ **Box Generation**: Boxes are automatically spawned by the MockWMS entity "
+                "after module instantiation and after each delivery. No manual intervention needed."
+            )
 
     elif section == "📊 Monitor":
         st.header("Runtime Monitoring")

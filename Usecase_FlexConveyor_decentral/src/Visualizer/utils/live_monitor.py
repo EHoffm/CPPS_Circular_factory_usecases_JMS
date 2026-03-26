@@ -245,18 +245,17 @@ def create_live_topology_figure(
     )
     fig.set_size_inches(fig_width, fig_height)
 
-    # Create a mapping of module IRI strings to box counts
-    module_box_counts = {}
+    # Create a mapping of module IRI strings to box IRIs
+    module_boxes = {}
     for module_iri, box_iris in box_locations.items():
-        module_box_counts[str(module_iri)] = len(box_iris)
+        module_boxes[str(module_iri)] = box_iris
 
     # Draw modules
     for node in nodes:
         # Determine module color based on whether it has boxes
         module_iri_str = str(node.id)
         has_boxes = (
-            module_iri_str in module_box_counts
-            and module_box_counts[module_iri_str] > 0
+            module_iri_str in module_boxes and len(module_boxes[module_iri_str]) > 0
         )
 
         facecolor = "lightcoral" if has_boxes else "lightblue"
@@ -284,8 +283,19 @@ def create_live_topology_figure(
 
         # Draw boxes on this module if any
         if has_boxes:
-            box_count = module_box_counts[module_iri_str]
-            # Draw a box indicator with count
+            box_iris = module_boxes[module_iri_str]
+            # Get box fragments (names)
+            box_names = [
+                box_iri.split("#")[-1] if "#" in box_iri else box_iri.split("/")[-1]
+                for box_iri in box_iris
+            ]
+            box_label = (
+                ", ".join(box_names)
+                if len(box_names) <= 2
+                else f"{box_names[0]}+{len(box_names)-1}"
+            )
+
+            # Draw a box indicator
             box_rect = patches.Rectangle(
                 (node.x - 10, node.y + 5),
                 20,
@@ -296,11 +306,11 @@ def create_live_topology_figure(
             )
             ax.add_patch(box_rect)
 
-            # Box count label
+            # Box name label
             ax.text(
                 node.x,
                 node.y + 10,
-                f"Box {box_count}",
+                box_label,
                 ha="center",
                 va="center",
                 fontsize=7,

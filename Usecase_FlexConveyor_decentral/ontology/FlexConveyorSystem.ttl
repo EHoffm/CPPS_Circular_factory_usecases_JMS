@@ -22,7 +22,8 @@
 
 :hasService rdf:type owl:ObjectProperty ;
     rdfs:domain cfc:Resource ;
-    rdfs:range :Service .
+    rdfs:range :Service ;
+    owl:inverseOf :isServiceOf .
 
 :isServiceOf rdf:type owl:ObjectProperty ;
     owl:inverseOf :hasService ;
@@ -42,9 +43,18 @@
 :ExitModule rdf:type owl:Class ;
     rdfs:subClassOf :FlexConveyorModule .
 
+:WarehouseManagementSystem rdf:type owl:Class ;
+    rdfs:subClassOf cfc:Resource .
+
 :Box rdf:type owl:Class .
 
 :Connection rdf:type owl:Class .
+
+:SpawnBoxService rdf:type owl:Class ;
+    rdfs:subClassOf :Service .
+
+:AcceptBoxService rdf:type owl:Class ;
+    rdfs:subClassOf :Service .
 
 :ReserveService rdf:type owl:Class ;
     rdfs:subClassOf :Service .
@@ -90,13 +100,14 @@
     rdfs:range :FlexConveyorModule .
 
 :hasPossession rdf:type owl:ObjectProperty ;
-    rdfs:domain :FlexConveyorModule ;
+    rdfs:domain cfc:Resource ;
     rdfs:range :Box ;
     owl:inverseOf :isPossessedBy .
 
 :isPossessedBy rdf:type owl:ObjectProperty ;
     rdfs:domain :Box ;
-    rdfs:range :FlexConveyorModule .
+    rdfs:range cfc:Resource ;
+    owl:inverseOf :hasPossession .
 
 :hasOrigin rdf:type owl:ObjectProperty ;
     rdfs:domain :Box ;
