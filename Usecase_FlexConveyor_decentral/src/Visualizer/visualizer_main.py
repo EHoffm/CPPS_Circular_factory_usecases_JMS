@@ -9,12 +9,10 @@ import os
 import importlib
 import subprocess
 import sys
-from io import BytesIO
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 
 def _bootstrap_import_paths() -> None:
@@ -179,8 +177,6 @@ else:
             st.session_state.adjacency_matrix = {}
         if "directional_rows" not in st.session_state:
             st.session_state.directional_rows = []
-        if "topology_image_png" not in st.session_state:
-            st.session_state.topology_image_png = None
 
         action_col1, action_col2 = st.columns(2)
 
@@ -192,8 +188,6 @@ else:
                 st.session_state.get("ogm")
             )
 
-        if action_col2.button("build adjacency matrix", key="build_adjacency_matrix"):
-            monitor_module = importlib.import_module("utils.system_state_monitor")
             st.session_state.adjacency_matrix = monitor_module.build_adjacency_matrix(
                 st.session_state.get("ogm")
             )
@@ -205,32 +199,88 @@ else:
                 )
             )
 
-            topology_figure = topology_module.directional_rows_to_figure(
-                st.session_state.directional_rows
-            )
-            image_buffer = BytesIO()
-            topology_figure.savefig(
-                image_buffer,
-                format="png",
-                dpi=120,
-                bbox_inches="tight",
-                pad_inches=0.02,
-                transparent=True,
-            )
-            st.session_state.topology_image_png = image_buffer.getvalue()
-            image_buffer.close()
-            plt.close(topology_figure)
-
         if st.session_state.adjacency_matrix:
+            # Live Monitoring Controls
+            st.divider()
+
+            # Initialize live monitoring state
+            if "live_monitor_enabled" not in st.session_state:
+                st.session_state.live_monitor_enabled = False
+            if "live_monitor_refresh_rate" not in st.session_state:
+                st.session_state.live_monitor_refresh_rate = 1000
+            if "live_monitor_previous_state" not in st.session_state:
+                st.session_state.live_monitor_previous_state = False
+
+            # Control panel for live monitoring
+            col1, col2, col3 = st.columns([2, 1, 2])
+            with col1:
+                enable_monitoring = st.checkbox(
+                    "🔴 Enable live auto-refresh",
+                    value=st.session_state.live_monitor_enabled,
+                    key="enable_live_monitoring",
+                    help="Automatically refresh box locations and topology at the specified interval",
+                )
+
+                # Detect state change and log it
+                if enable_monitoring != st.session_state.live_monitor_previous_state:
+                    live_monitor_module = importlib.import_module("utils.live_monitor")
+                    live_monitor_module.log_monitoring_state_change(enable_monitoring)
+                    st.session_state.live_monitor_previous_state = enable_monitoring
+
+                st.session_state.live_monitor_enabled = enable_monitoring
+
+            with col2:
+                refresh_rate = st.selectbox(
+                    "Refresh Rate",
+                    options=[500, 1000, 2000, 5000],
+                    index=1,
+                    format_func=lambda x: f"{x/1000:.1f}s",
+                    key="live_refresh_rate",
+                )
+                st.session_state.live_monitor_refresh_rate = refresh_rate
+
+            with col3:
+                if st.session_state.live_monitor_enabled:
+                    st.success("🔄 Live monitoring active")
+                else:
+                    st.info("⏸️ Monitoring paused")
+
+            # Auto-refresh mechanism (only triggers if enabled)
+            if st.session_state.live_monitor_enabled:
+                refresh_count = st_autorefresh(
+                    interval=st.session_state.live_monitor_refresh_rate,
+                    key="live_monitor_autorefresh",
+                )
+
+                # Call the update method
+                live_monitor_module = importlib.import_module("utils.live_monitor")
+                ogm = get_ogm()
+                update_data = live_monitor_module.update_live_monitoring_data(ogm)
+
             st.subheader("System Topology")
 
-            if st.session_state.topology_image_png:
-                left_col, center_col, right_col = st.columns([0.2, 0.6, 0.2])
-                with center_col:
-                    st.image(st.session_state.topology_image_png, width="stretch")
+            # Display dynamic topology visualization
+            if st.session_state.directional_rows:
+                topology_module = importlib.import_module("utils.topology_renderer")
+                live_monitor_module = importlib.import_module("utils.live_monitor")
+
+                ogm = get_ogm()
+                box_locations = live_monitor_module.fetch_box_locations_for_monitoring(
+                    ogm
+                )
+
+                # Create live PNG buffer with boxes (fast rendering)
+                image_buf = live_monitor_module.create_live_topology_figure(
+                    st.session_state.directional_rows, box_locations
+                )
+                st.image(image_buf, width="stretch")
+            else:
+                st.warning(
+                    "No topology data available. Click 'build adjacency matrix' to generate it."
+                )
 
             if st.session_state.directional_rows:
-                st.caption("Adjacency Matrix ")
+                st.caption("Adjacency Matrix")
 
                 def _display_value(value):
                     if value == 0 or value is None:
@@ -251,26 +301,59 @@ else:
 
         st.subheader("Box Locations")
 
-        if st.button("Refresh box locations", key="refresh_box_locations"):
-            monitor_module = importlib.import_module("utils.system_state_monitor")
-            box_locations = monitor_module.get_box_locations(
-                st.session_state.get("ogm")
-            )
+        # Show live box locations if auto-refresh is enabled, otherwise show manual refresh button
+        if st.session_state.get("live_monitor_enabled", True):
+            # Live monitoring mode - fetch and display automatically
+            live_monitor_module = importlib.import_module("utils.live_monitor")
+            ogm = get_ogm()
+            box_locations = live_monitor_module.fetch_box_locations_for_monitoring(ogm)
 
-            if not box_locations:
-                st.info("📦 No boxes currently in the system.")
-            else:
-                location_data = []
-                for module_iri, box_iris in sorted(box_locations.items()):
-                    for box_iri in box_iris:
-                        location_data.append(
-                            {
-                                "Module": module_iri,
-                                "Box": box_iri,
-                            }
-                        )
+            col_metrics, col_data = st.columns([1, 3])
 
-                st.dataframe(location_data, width="stretch")
+            with col_metrics:
+                if box_locations:
+                    total_boxes = sum(len(boxes) for boxes in box_locations.values())
+                    st.metric("Active Boxes", total_boxes)
+                    st.metric("Modules with Boxes", len(box_locations))
+                else:
+                    st.metric("Active Boxes", 0)
+
+            with col_data:
+                if box_locations:
+                    location_data = []
+                    for module_iri, box_iris in sorted(box_locations.items()):
+                        for box_iri in box_iris:
+                            location_data.append(
+                                {
+                                    "Module": module_iri,
+                                    "Box": box_iri,
+                                }
+                            )
+                    st.dataframe(location_data, width="stretch")
+                else:
+                    st.info("📦 No boxes currently in the system.")
+        else:
+            # Manual refresh mode - show button
+            if st.button("Refresh box locations", key="refresh_box_locations"):
+                monitor_module = importlib.import_module("utils.system_state_monitor")
+                box_locations = monitor_module.get_box_locations(
+                    st.session_state.get("ogm")
+                )
+
+                if not box_locations:
+                    st.info("📦 No boxes currently in the system.")
+                else:
+                    location_data = []
+                    for module_iri, box_iris in sorted(box_locations.items()):
+                        for box_iri in box_iris:
+                            location_data.append(
+                                {
+                                    "Module": module_iri,
+                                    "Box": box_iri,
+                                }
+                            )
+
+                    st.dataframe(location_data, width="stretch")
 
         button_columns = st.columns(4)
         for index, discovered_module in enumerate(st.session_state.discovered_modules):

@@ -805,6 +805,7 @@ class FlexConveyor:
         FC = "http://w3id.org/circularfactory/FlexConveyor#"
         INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
         named_graph = IRI(INST)
+        has_state = IRI(f"{FC}hasState")
 
         self.WMS_transfer_ownership(
             box,
@@ -812,16 +813,15 @@ class FlexConveyor:
             f"{INST}#WMS",
         )
 
-        old_states = self.ogm.db.triples_get(sub=box, pred=IRI(f"{FC}hasState"))
-        if old_states:
-            self.ogm.db.triples_delete(
-                old_states, check_exist=False, named_graph=named_graph
-            )
-        self.ogm.db.triples_add(
-            [(box, IRI(f"{FC}hasState"), IRI(f"{FC}Delivered"))],
-            check_exist=False,
+        success = self.ogm.db.triple_update(
+            old_triple=(box, has_state, IRI(f"{FC}InTransit")),
+            new_triple=(box, has_state, IRI(f"{FC}Delivered")),
             named_graph=named_graph,
         )
+        if not success:
+            print(
+                f"  ❌ Failed to update state to Delivered for box {box} at {self.module_id}"
+            )
         print(f"  ✅ Box {box} DELIVERED to destination {self.module_id}!")
 
     def WMS_transfer_ownership(
@@ -834,40 +834,24 @@ class FlexConveyor:
         has_possession = IRI(f"{FC}hasPossession")
         is_possessed_by = IRI(f"{FC}isPossessedBy")
 
-        # Remove parcel from this source module
-        old_possession = self.ogm.db.triples_get(
-            sub=origin_module, pred=has_possession, obj=box
-        )
-        if old_possession:
-            self.ogm.db.triples_delete(
-                old_possession, check_exist=False, named_graph=named_graph
-            )
-            print(f"  → Removed box from source module {origin_module}")
-
-        # Remove old isPossessedBy on the box
-        old_possessed = self.ogm.db.triples_get(sub=box, pred=is_possessed_by)
-        if old_possessed:
-            self.ogm.db.triples_delete(
-                old_possessed, check_exist=False, named_graph=named_graph
-            )
-
-        # Remove any stale hasPossession triples for this box on any module
-        old_possession_any = self.ogm.db.triples_get(pred=has_possession, obj=box)
-        if old_possession_any:
-            self.ogm.db.triples_delete(
-                old_possession_any, check_exist=False, named_graph=named_graph
-            )
-
-        # Assign ownership to destination module (B)
-        self.ogm.db.triples_add(
-            [
+        success = self.ogm.db.triples_update(
+            old_triples=[
+                (origin_module, has_possession, box),
+                (box, is_possessed_by, origin_module),
+            ],
+            new_triples=[
                 (destination_module, has_possession, box),
                 (box, is_possessed_by, destination_module),
             ],
-            check_exist=False,
             named_graph=named_graph,
         )
+        if not success:
+            print(
+                f"  ❌ Failed to transfer ownership of box {box} from {origin_module} to {destination_module}"
+            )
+            return False
         print(f"  ✓ Box ownership transferred: {origin_module} → {destination_module}")
+        return True
 
     def route_box(self, box_iri: str, destination_iri: str) -> dict:
         """Route a box to its destination using Dijkstra's shortest path.

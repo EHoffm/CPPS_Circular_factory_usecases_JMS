@@ -315,7 +315,7 @@ def instantiate_modules(
                 continue
 
             module_iri = IRI(module_iri_str)
-            print(f"\n📦 Module {idx}: {module_iri}")
+            print(f"\n⚙️ Module {idx}: {module_iri}")
 
             try:
                 # Ensure object-property values are dicts, not bare strings
