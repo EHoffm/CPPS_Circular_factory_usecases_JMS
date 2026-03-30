@@ -9,11 +9,13 @@ import atexit
 import signal
 import threading
 from typing import Any, List, Optional
+import logging
 
 from graph_db_interface.utils.iri import IRI
 from kapps_ogm import OGM
 from kapps_ogm import ClassScope
 import aas_middleware as aas
+import aas_middleware.model.util as aas_util
 
 
 _running_modules: list[Any] = []
@@ -31,6 +33,25 @@ _DIRECTION_OPPOSITES = {
     "http://w3id.org/circularfactory/FlexConveyor#West": "http://w3id.org/circularfactory/FlexConveyor#East",
 }
 
+
+# Save the original middleware function
+_original_get_identifiable_attributes = aas_util.get_identifiable_attributes_of_model
+
+def _safe_get_identifiable_attributes(model):
+    """
+    Safety wrapper to prevent aas_middleware from crashing on 
+    graph_db_interface IRI objects that lack a __dict__ attribute.
+    """
+    try:
+        return _original_get_identifiable_attributes(model)
+    except TypeError as e:
+        if "vars() argument must have __dict__ attribute" in str(e):
+            # We hit an IRI or unhydrated Node. Safely tell the middleware to skip it.
+            return {}
+        raise e
+
+# Apply the patch globally
+aas_util.get_identifiable_attributes_of_model = _safe_get_identifiable_attributes
 
 def _create_bidirectional_connections(ogm: OGM, named_graph: IRI) -> None:
     """Create reverse (bidirectional) connections for all module pairs.
@@ -258,7 +279,6 @@ def _wrap_literal_iris_as_nodes(data: Any) -> Any:
         return [_wrap_literal_iris_as_nodes(item) for item in data]
     return data
 
-
 def instantiate_modules(
     modules: List[dict[str, Any]], ogm: OGM, host: str = "localhost"
 ) -> List[dict[str, Any]]:
@@ -347,7 +367,11 @@ def instantiate_modules(
             module_iri = IRI(module_iri_str)
             print(f"\n⚙️ Module {idx}: {module_iri}")
 
+                        
             try:
+                import traceback
+
+                # normalized_data = _strip_runtime_module_fields(module_data)
                 # Ensure object-property values are dicts, not bare strings
                 sanitized_data = _wrap_literal_iris_as_nodes(module_data)
 
@@ -396,6 +420,7 @@ def instantiate_modules(
 
             except Exception as e:
                 print(f"  ✗ Error: {str(e)}")
+                traceback.print_exc()
                 result = {
                     "module_id": str(module_iri),
                     "status": "failed",

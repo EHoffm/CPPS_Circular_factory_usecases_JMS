@@ -108,10 +108,8 @@ class Service:
 
         self._service_url = f"{host_url}/workflows/{self._service_name}/execute"
 
+        # 1. We only define the simple literal properties for OGM creation
         property_chains = [
-            [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#isServiceOf"),
-            ],
             [
                 IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt"),
             ],
@@ -122,11 +120,9 @@ class Service:
             IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt"): [
                 self._service_url
             ],
-            IRI("http://w3id.org/circularfactory/FlexConveyor#isServiceOf"): [
-                {"id": self.resource_instance}
-            ],
         }
 
+        # 2. Create the node with accessibleAt and its rdf:type
         service_node = ogm.create(
             class_iri=self.service_class,
             class_scope=class_scope,
@@ -134,10 +130,35 @@ class Service:
             named_graph=named_graph,
         )
         self._service_instance = service_node.id
+
+        # 3. Add the structural relationships manually as clean IRIs
+        is_service_of = IRI("http://w3id.org/circularfactory/FlexConveyor#isServiceOf")
+        has_service = IRI("http://w3id.org/circularfactory/FlexConveyor#hasService")
+
+        try:
+            ogm.db.triples_add(
+                [
+                    (
+                        self._service_instance,
+                        is_service_of,
+                        self.resource_instance,
+                    ),
+                    (
+                        self.resource_instance,
+                        has_service,
+                        self._service_instance,
+                    ),
+                ],
+                check_exist=False,
+                named_graph=named_graph,
+            )
+            print("✅ Successfully added service relationship triples to GraphDB.")
+        except Exception as e:
+            logging.error(f"Failed to add relationship triples to GraphDB: {e}")
+
         logging.info(
             f"Registered service in knowledge graph with IRI: {self._service_instance} and URL: {self._service_url}"
         )
-
     def deregister(self, ogm: OGM):
         if self._is_remote:
             raise ValueError("Remote services cannot be deregistered.")
