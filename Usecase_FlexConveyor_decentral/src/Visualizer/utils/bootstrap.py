@@ -37,9 +37,10 @@ _DIRECTION_OPPOSITES = {
 # Save the original middleware function
 _original_get_identifiable_attributes = aas_util.get_identifiable_attributes_of_model
 
+
 def _safe_get_identifiable_attributes(model):
     """
-    Safety wrapper to prevent aas_middleware from crashing on 
+    Safety wrapper to prevent aas_middleware from crashing on
     graph_db_interface IRI objects that lack a __dict__ attribute.
     """
     try:
@@ -50,8 +51,10 @@ def _safe_get_identifiable_attributes(model):
             return {}
         raise e
 
+
 # Apply the patch globally
 aas_util.get_identifiable_attributes_of_model = _safe_get_identifiable_attributes
+
 
 def _create_bidirectional_connections(ogm: OGM, named_graph: IRI) -> None:
     """Create reverse (bidirectional) connections for all module pairs.
@@ -279,6 +282,7 @@ def _wrap_literal_iris_as_nodes(data: Any) -> Any:
         return [_wrap_literal_iris_as_nodes(item) for item in data]
     return data
 
+
 def instantiate_modules(
     modules: List[dict[str, Any]], ogm: OGM, host: str = "localhost"
 ) -> List[dict[str, Any]]:
@@ -367,11 +371,7 @@ def instantiate_modules(
             module_iri = IRI(module_iri_str)
             print(f"\n⚙️ Module {idx}: {module_iri}")
 
-                        
             try:
-                import traceback
-
-                # normalized_data = _strip_runtime_module_fields(module_data)
                 # Ensure object-property values are dicts, not bare strings
                 sanitized_data = _wrap_literal_iris_as_nodes(module_data)
 
@@ -420,7 +420,6 @@ def instantiate_modules(
 
             except Exception as e:
                 print(f"  ✗ Error: {str(e)}")
-                traceback.print_exc()
                 result = {
                     "module_id": str(module_iri),
                     "status": "failed",
@@ -496,7 +495,9 @@ def instantiate_wms(ogm: OGM, host: str = "localhost") -> dict[str, Any]:
 
         # Define WMS instance IRI and class
         wms_iri = IRI("http://w3id.org/circularfactory/FlexConveyorInstances#WMS")
-        wms_class_iri = IRI("http://w3id.org/circularfactory/FlexConveyor#WarehouseManagementSystem")
+        wms_class_iri = IRI(
+            "http://w3id.org/circularfactory/FlexConveyor#WarehouseManagementSystem"
+        )
         named_graph_iri = IRI("http://w3id.org/circularfactory/FlexConveyorInstances")
         rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
 

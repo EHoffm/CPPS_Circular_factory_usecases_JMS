@@ -159,6 +159,7 @@ class Service:
         logging.info(
             f"Registered service in knowledge graph with IRI: {self._service_instance} and URL: {self._service_url}"
         )
+
     def deregister(self, ogm: OGM):
         if self._is_remote:
             raise ValueError("Remote services cannot be deregistered.")
