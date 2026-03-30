@@ -4,6 +4,8 @@ Login Handling Module
 Provides login UI components and session state management for GraphDB authentication.
 """
 
+import os
+
 import streamlit as st
 from graph_db_interface.utils.graph_db_credentials import GraphDBCredentials
 from graph_db_interface import GraphDB
@@ -56,7 +58,7 @@ def render_manual_login():
     # Base URL
     base_url = st.text_input(
         "Base URL",
-        value=st.session_state.get("temp_base_url", "http://localhost:7200"),
+        value=st.session_state.get("temp_base_url", "https://graphdb.iam-mms.kit.edu/" ), #"http://localhost:7200"
         key="input_base_url",
         help="GraphDB server base URL (e.g., http://localhost:7200)",
     )
@@ -65,7 +67,7 @@ def render_manual_login():
     # Repository
     repository = st.text_input(
         "Repository",
-        value=st.session_state.get("temp_repository", ""),
+        value=st.session_state.get("temp_repository", "OGM"),
         key="input_repository",
         help="GraphDB repository name",
     )
@@ -74,7 +76,7 @@ def render_manual_login():
     # Username
     username = st.text_input(
         "Username",
-        value=st.session_state.get("temp_username", ""),
+        value=st.session_state.get("temp_username", os.environ.get("GRAPHDB_USERNAME")),
         key="input_username",
         help="GraphDB username",
     )
@@ -84,7 +86,7 @@ def render_manual_login():
     password = st.text_input(
         "Password",
         type="password",
-        value=st.session_state.get("temp_password", ""),
+        value=st.session_state.get("temp_password", os.environ.get("GRAPHDB_PASSWORD")),
         key="input_password",
         help="GraphDB password",
     )
