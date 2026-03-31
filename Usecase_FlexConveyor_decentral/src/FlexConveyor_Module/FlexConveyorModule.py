@@ -682,7 +682,7 @@ class FlexConveyor:
 
         # Wait 1 second to simulate transit time
         print(f"  ⏱️  Waiting 1 second for transit...")
-        time.sleep(5)
+        time.sleep(1)
 
         self.WMS_transfer_ownership(
             str(box), str(self.module_id), str(destination_module)

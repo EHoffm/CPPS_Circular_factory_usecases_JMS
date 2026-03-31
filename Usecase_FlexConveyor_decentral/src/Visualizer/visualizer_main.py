@@ -227,6 +227,9 @@ else:
         if "directional_rows" not in st.session_state:
             st.session_state.directional_rows = []
 
+        # Always initialize to avoid NameError when topology data isn't built yet.
+        live_box_locations = {}
+
         action_col1, action_col2 = st.columns(2)
 
         if action_col1.button(
@@ -308,19 +311,23 @@ else:
 
             st.subheader("System Topology")
 
+            # Fetch once per rerun and reuse in topology + table rendering
+            live_box_locations = {}
+            if st.session_state.live_monitor_enabled:
+                live_monitor_module = importlib.import_module("utils.live_monitor")
+                ogm = get_ogm()
+                live_box_locations = (
+                    live_monitor_module.fetch_box_locations_for_monitoring(ogm)
+                )
+
             # Display dynamic topology visualization
             if st.session_state.directional_rows:
                 topology_module = importlib.import_module("utils.topology_renderer")
                 live_monitor_module = importlib.import_module("utils.live_monitor")
 
-                ogm = get_ogm()
-                box_locations = live_monitor_module.fetch_box_locations_for_monitoring(
-                    ogm
-                )
-
                 # Create live PNG buffer with boxes (fast rendering)
                 image_buf = live_monitor_module.create_live_topology_figure(
-                    st.session_state.directional_rows, box_locations
+                    st.session_state.directional_rows, live_box_locations
                 )
                 st.image(image_buf, width="stretch")
             else:
@@ -352,10 +359,8 @@ else:
 
         # Show live box locations if auto-refresh is enabled, otherwise show manual refresh button
         if st.session_state.get("live_monitor_enabled", True):
-            # Live monitoring mode - fetch and display automatically
-            live_monitor_module = importlib.import_module("utils.live_monitor")
-            ogm = get_ogm()
-            box_locations = live_monitor_module.fetch_box_locations_for_monitoring(ogm)
+            # Live monitoring mode - use already-fetched data from this rerun
+            box_locations = live_box_locations
 
             col_metrics, col_data = st.columns([1, 3])
 

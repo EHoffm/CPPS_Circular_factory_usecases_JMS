@@ -2,8 +2,8 @@
 
 from typing import Any
 
-from kapps_ogm import OGM, ClassScope
-from graph_db_interface import IRI, GraphDB
+from kapps_ogm import OGM
+from graph_db_interface import IRI
 
 
 def build_adjacency_matrix(ogm: OGM) -> dict[str, list[tuple[str | None, str | None]]]:
@@ -71,78 +71,58 @@ def build_adjacency_matrix(ogm: OGM) -> dict[str, list[tuple[str | None, str | N
     return adj
 
 
-def _as_dict(instance: Any) -> dict[str, Any]:
-    if isinstance(instance, dict):
-        return instance
-    if hasattr(instance, "model_dump"):
-        return instance.model_dump(by_alias=True)
-    if hasattr(instance, "dict"):
-        return instance.dict()
-    return {}
-
-
 def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
     print("discover_modules triggered")
-
-    db: GraphDB = ogm.db
-    triples = db.triples_get(
-        pred=IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
-        obj=IRI("http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule"),
-    )
-    modules = [triple[0] for triple in triples]
     discovered: list[dict[str, str | None]] = []
+    instances_graph = "http://w3id.org/circularfactory/FlexConveyorInstances"
 
-    if not modules:
-        print("No instantiated modules found")
+    query = f"""
+    SELECT DISTINCT ?module ?service_url
+    WHERE {{
+      GRAPH <{instances_graph}> {{
+        ?module <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+                <http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule> .
+
+        OPTIONAL {{
+          {{
+            ?module <http://w3id.org/circularfactory/FlexConveyor#hasService> ?service .
+          }}
+          UNION
+          {{
+            ?service <http://w3id.org/circularfactory/FlexConveyor#isServiceOf> ?module .
+          }}
+          ?service <http://w3id.org/circularfactory/FlexConveyor#accessibleAt> ?service_url .
+        }}
+      }}
+    }}
+    """
+
+    try:
+        res = ogm.db.query(query=query, convert_bindings=True)
+        bindings = (res or {}).get("results", {}).get("bindings", [])
+    except Exception as e:
+        print(f"Error discovering modules: {e}")
         return discovered
 
-    has_service_key = IRI(
-        "http://w3id.org/circularfactory/FlexConveyor#hasService"
-    ).lined
-    accessible_at_key = IRI(
-        "http://w3id.org/circularfactory/FlexConveyor#accessibleAt"
-    ).lined
+    module_to_url: dict[str, str | None] = {}
+    for row in bindings:
+        module = str(row.get("module")) if row.get("module") else None
+        if not module:
+            continue
 
-    for module in modules:
+        module_to_url.setdefault(module, None)
+        service_url = row.get("service_url")
+        if service_url and module_to_url[module] is None:
+            module_to_url[module] = str(service_url).split("workflows", 1)[0]
+
+    for module in sorted(module_to_url.keys()):
         print(f"Discovered module: {module}")
-        prop_chains = [
-            [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasService"),
-                IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt"),
-            ],
-            [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
-                IRI("http://w3id.org/circularfactory/FlexConveyor#connectsTo"),
-            ],
-            [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection"),
-            ],
-        ]
-        module_service = ogm.fetch(
-            instance_iri=module,
-            class_scope=ClassScope.from_property_chains(prop_chains),
-            materialize=True,
+        discovered.append(
+            {"module_id": module, "accessible_at": module_to_url[module]}
         )
-        module_data = _as_dict(module_service.instance)
-        services = module_data.get(has_service_key, [])
 
-        accessible_at: str | None = None
-        for service in services:
-            if not isinstance(service, dict):
-                continue
-            locations = service.get(accessible_at_key, [])
-            if not locations:
-                continue
-            first_location = locations[0].split("workflows")[0]
-            if isinstance(first_location, dict):
-                accessible_at = first_location.get("id")
-            else:
-                accessible_at = str(first_location)
-            if accessible_at:
-                break
-
-        discovered.append({"module_id": str(module), "accessible_at": accessible_at})
+    if not discovered:
+        print("No instantiated modules found")
 
     return discovered
 
@@ -158,28 +138,26 @@ def get_box_locations(ogm: OGM) -> dict[str, list[str]]:
     locations: dict[str, list[str]] = {}
 
     try:
-        has_possession = IRI(
-            "http://w3id.org/circularfactory/FlexConveyor#hasPossession"
+        instances_graph = "http://w3id.org/circularfactory/FlexConveyorInstances"
+        query = (
+            "SELECT ?module ?box WHERE { "
+            f"GRAPH <{instances_graph}> {{ "
+            "?module <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> "
+            "<http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule> . "
+            "OPTIONAL { "
+            "?module <http://w3id.org/circularfactory/FlexConveyor#hasPossession> ?box . "
+            "} "
+            "}}"
         )
-        rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
-        module_class = IRI(
-            "http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule"
-        )
+        res = ogm.db.query(query=query, convert_bindings=True)
+        bindings = (res or {}).get("results", {}).get("bindings", [])
 
-        # Get all modules
-        module_triples = ogm.db.triples_get(pred=rdf_type, obj=module_class)
-        modules = [triple[0] for triple in module_triples]
-
-        # For each module, find boxes it possesses
-        for module_iri in modules:
-            possession_triples = ogm.db.triples_get(sub=module_iri, pred=has_possession)
-            boxes = (
-                [str(triple[2]) for triple in possession_triples]
-                if possession_triples
-                else []
-            )
-            if boxes:
-                locations[str(module_iri)] = boxes
+        for row in bindings:
+            module = str(row.get("module")) if row.get("module") else None
+            box = str(row.get("box")) if row.get("box") else None
+            if not module or not box:
+                continue
+            locations.setdefault(module, []).append(box)
 
         return locations
 
