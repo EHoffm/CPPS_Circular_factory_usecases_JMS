@@ -58,7 +58,7 @@ def render_manual_login():
     # Base URL
     base_url = st.text_input(
         "Base URL",
-        value=st.session_state.get("temp_base_url", "https://graphdb.iam-mms.kit.edu/" ), #"http://localhost:7200"
+        value=st.session_state.get("temp_base_url", "http://localhost:7200"),
         key="input_base_url",
         help="GraphDB server base URL (e.g., http://localhost:7200)",
     )
@@ -67,7 +67,7 @@ def render_manual_login():
     # Repository
     repository = st.text_input(
         "Repository",
-        value=st.session_state.get("temp_repository", "OGM"),
+        value=st.session_state.get("temp_repository", ""),
         key="input_repository",
         help="GraphDB repository name",
     )
@@ -76,7 +76,7 @@ def render_manual_login():
     # Username
     username = st.text_input(
         "Username",
-        value=st.session_state.get("temp_username", os.environ.get("GRAPHDB_USERNAME")),
+        value=st.session_state.get("temp_username", ""),
         key="input_username",
         help="GraphDB username",
     )
@@ -86,7 +86,7 @@ def render_manual_login():
     password = st.text_input(
         "Password",
         type="password",
-        value=st.session_state.get("temp_password", os.environ.get("GRAPHDB_PASSWORD")),
+        value=st.session_state.get("temp_password", ""),
         key="input_password",
         help="GraphDB password",
     )
@@ -157,9 +157,14 @@ def render_env_login():
             f"Found {len(st.session_state.available_repositories)} repository/repositories"
         )
 
+        env_repo = st.session_state.temp_credentials.repository
+        default_index = 0
+        if env_repo in st.session_state.available_repositories:
+            default_index = st.session_state.available_repositories.index(env_repo)
         selected_repo = st.selectbox(
             "Select Repository",
             options=st.session_state.available_repositories,
+            index=default_index,
             key="selected_repository",
         )
 
