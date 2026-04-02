@@ -4,7 +4,15 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+#################################################################
+# Ontology
+#################################################################
+: rdf:type owl:Ontology .
 
+
+#################################################################
+# Classes
+#################################################################
 :screw a owl:Class ;
     rdfs:subClassOf :Product ;
     rdfs:label "Screw"@en ;
@@ -15,28 +23,19 @@
     rdfs:label "Unscrewing Process"@en ;
     rdfs:comment "The unscrewing process involves the removal of a screw from a material or object"@en .
 
+:TimeSeriesData a owl:Class;
+    rdfs:label "Time Series Data"@en ;
+    rdfs:comment "A collection of data points indexed in time order, typically consisting of sequences of measurements taken at successive times."@en .
+
+#################################################################
+# Object Properties
+#################################################################
 
 :hasScrew a owl:ObjectProperty ;
     rdfs:domain :unscrewingOperation ;
     rdfs:range :screw ;
     rdfs:label "has screw"@en ;
     rdfs:comment "Links the unscrewing operation to the specific screw being removed."@en .
-
-:hasSuccessStatus a owl:DatatypeProperty ;
-    rdfs:domain :unscrewingOperation ;
-    rdfs:range xsd:string ;
-    rdfs:label "has successstatus"@en ;
-    rdfs:comment "Indicates whether the unscrewing process was successful (true) or not (false)."@en .
-
-:TimeSeriesData a owl:Class;
-    rdfs:label "Time Series Data"@en ;
-    rdfs:comment "A collection of data points indexed in time order, typically consisting of sequences of measurements taken at successive times."@en .
-
-:hasJSONEncodedTimeSeriesData a owl:DatatypeProperty ;
-    rdfs:domain :TimeSeriesData ;
-    rdfs:range xsd:string ;
-    rdfs:label "has JSON encoded time series data"@en ;
-    rdfs:comment "Contains the time series data in JSON format."@en .
 
 :hasUnscrewingTorqueTimeSeriesData a owl:ObjectProperty ;
     rdfs:domain :unscrewingOperation ;
@@ -55,6 +54,22 @@
     rdfs:range :TimeSeriesData ;
     rdfs:label "has position time series data"@en ;
     rdfs:comment "Links to the time series data of robot TCO position along screw axis recorded during the unscrewing process."@en .
+
+#################################################################
+# Datatype Properties
+#################################################################
+:hasSuccessStatus a owl:DatatypeProperty ;
+    rdfs:domain :unscrewingOperation ;
+    rdfs:range xsd:string ;
+    rdfs:label "has successstatus"@en ;
+    rdfs:comment "Indicates whether the unscrewing process was successful (true) or not (false)."@en .
+
+
+:hasJSONEncodedTimeSeriesData a owl:DatatypeProperty ;
+    rdfs:domain :TimeSeriesData ;
+    rdfs:range xsd:string ;
+    rdfs:label "has JSON encoded time series data"@en ;
+    rdfs:comment "Contains the time series data in JSON format."@en .
 
 :hasLowerTighteningTorque a owl:DatatypeProperty ;
     rdfs:domain :screw ;

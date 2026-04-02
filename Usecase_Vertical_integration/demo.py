@@ -17,14 +17,30 @@ def main():
     anomaly_detector = AnomalyDetector(threshold=0.1)
     learner = Learner()
 
+    named_graph_iri = IRI(
+        "http://w3id.org/circularfactory/UsecaseVerticalIntegrationInstances"
+    )
+
+    # Clear the named graph before instantiation to avoid stale triples
+    print("🧹 Clearing existing instances graph...")
+    try:
+        ogm.db.clear_graph(named_graph_iri)
+        print("  ✓ Graph cleared")
+    except Exception as clear_err:
+        print(f"  ⚠️  Could not clear graph: {clear_err} (continuing anyway)")
+
     # Example usage:
+
     screw_type = IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#M4_Screw")
     screwing_resource.write_time_series_data_to_knowledge_graph(screw_type)
+
     process_instance_iri = IRI(
         "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation1"
     )
     fetched_data = anomaly_detector.fetch_process_model(process_instance_iri)
-    annotated_data = anomaly_detector.detect_anomaly(fetched_data)
+    annotated_data = anomaly_detector.detect_anomaly(
+        fetched_data
+    )  # TODO: ab einschließlich dieser Zeile noch zu debuggen und schauen, ob fetched_data das richtige Format liefert
     anomaly_detector.update_instance(process_instance_iri, annotated_data)
     # late at night, the learner awakes. he picks one specific screw type and learns from all process descriptions
     learner.get_all_process_descriptions()

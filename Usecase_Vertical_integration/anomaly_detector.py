@@ -31,15 +31,17 @@ class AnomalyDetector:
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData"
                 ),
                 IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
                 ),
             ],
         ]
 
         class_scope = ClassScope.from_property_chains(property_chains)  # type: ignore
-        fetched_instance = self.ogm.fetch(class_scope, instance_iri=instance_iri).instance  # type: ignore TODO: class_scope.from_property_chains(prop_chains)
+        fetched_instance = self.ogm.fetch(class_scope=class_scope, instance_iri=instance_iri)  # type: ignore TODO: class_scope.from_property_chains(prop_chains)
+        pydantic_model = fetched_instance.materialize()
+        serialized = pydantic_model.model_dump()
 
-        return fetched_instance.model_dump()
+        return serialized
 
     def detect_anomaly(self, data: dict) -> dict:
         """processes fetched data, detects anomalies, returns annotated data structure
