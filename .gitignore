@@ -1,3 +1,5 @@
+.env
+
 # Log files
 src/flexconveyor_test.log
 src/flexconveyor.log
