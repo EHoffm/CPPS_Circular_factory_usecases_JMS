@@ -1,0 +1,88 @@
+@prefix : <https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+
+:screw a owl:Class ;
+    rdfs:subClassOf :Product ;
+    rdfs:label "Screw"@en ;
+    rdfs:comment "A screw is a type of fastener characterized by a helical ridge"@en .
+
+:unscrewingOperation a owl:Class ;
+    rdfs:subClassOf :Process ;
+    rdfs:label "Unscrewing Process"@en ;
+    rdfs:comment "The unscrewing process involves the removal of a screw from a material or object"@en .
+
+
+:hasScrew a owl:ObjectProperty ;
+    rdfs:domain :unscrewingOperation ;
+    rdfs:range :screw ;
+    rdfs:label "has screw"@en ;
+    rdfs:comment "Links the unscrewing operation to the specific screw being removed."@en .
+
+:hasSuccessStatus a owl:DatatypeProperty ;
+    rdfs:domain :unscrewingOperation ;
+    rdfs:range xsd:string ;
+    rdfs:label "has successstatus"@en ;
+    rdfs:comment "Indicates whether the unscrewing process was successful (true) or not (false)."@en .
+
+:TimeSeriesData a owl:Class;
+    rdfs:label "Time Series Data"@en ;
+    rdfs:comment "A collection of data points indexed in time order, typically consisting of sequences of measurements taken at successive times."@en .
+
+:hasJSONEncodedTimeSeriesData a owl:DatatypeProperty ;
+    rdfs:domain :TimeSeriesData ;
+    rdfs:range xsd:string ;
+    rdfs:label "has JSON encoded time series data"@en ;
+    rdfs:comment "Contains the time series data in JSON format."@en .
+
+:hasUnscrewingTorqueTimeSeriesData a owl:ObjectProperty ;
+    rdfs:domain :unscrewingOperation ;
+    rdfs:range :TimeSeriesData ;
+    rdfs:label "has unscrewing time series data"@en ;
+    rdfs:comment "Links to the time series data recorded during the unscrewing process."@en .
+
+:hasAxialForceTimeSeriesData a owl:ObjectProperty ;
+    rdfs:domain :unscrewingOperation ;
+    rdfs:range :TimeSeriesData ;
+    rdfs:label "has axial force time series data"@en ;
+    rdfs:comment "Links to the time series data of axial force recorded during the unscrewing process."@en .
+
+:hasRobotPositionTimeSeriesData a owl:ObjectProperty ;
+    rdfs:domain :unscrewingOperation ;
+    rdfs:range :TimeSeriesData ;
+    rdfs:label "has position time series data"@en ;
+    rdfs:comment "Links to the time series data of robot TCO position along screw axis recorded during the unscrewing process."@en .
+
+:hasLowerTighteningTorque a owl:DatatypeProperty ;
+    rdfs:domain :screw ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "has lower tightening torque"@en ;
+    rdfs:comment "Indicates the minimum torque required to properly tighten the screw. to check if torque can be applied to it."@en .
+
+:hasUpperDynamicLoseningTorque a owl:DatatypeProperty ;
+    rdfs:domain :screw ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "has upper dynamic loosening torque"@en ;
+    rdfs:comment "Specifies the maximum torque at which the screw may loosen under dynamic" .
+
+:hasLowerAxialForce a owl:DatatypeProperty ;
+    rdfs:domain :screw ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "has lower axial force"@en ;
+    rdfs:comment "minimum axial force that indicates the screw moving towards the screwdriver"@en .
+
+
+:hasAxialForceApproach a owl:DatatypeProperty ;
+    rdfs:domain :screw ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "has axial force on approach"@en ;
+    rdfs:comment "The axial force measured while the screwdriver approaches the screw head."@en .
+		
+:hasPositionOnApproach a owl:DatatypeProperty ;
+    rdfs:domain :unscrewingOperation ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "Position on approach"@en ;
+    rdfs:comment "The position along the screw axis when approaching the screw."@en .

@@ -33,9 +33,7 @@ class ScrewingResource:
             # data: {hasScrew: screw_type,
             #    hasunscrewingTorqueTimeSeriesData: [...],
             #    hasAxialForceTimeSeriesData: [...]}
-            pdData = pd.read_csv(
-                f"Usecase_Vertical_integration/unscrewing_timeseries/{screw_types[screw]}.csv"
-            )
+            pdData = pd.read_csv(f"unscrewing_timeseries/{screw_types[screw]}.csv")
             data = {
                 "hasScrew": screw,
                 "hasUnscrewingTorqueTimeSeriesData": pdData[
