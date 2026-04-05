@@ -30,11 +30,9 @@ def main():
         print(f"  ⚠️  Could not clear graph: {clear_err} (continuing anyway)")
 
     # Example usage:
-
+    # TODO: noch den screw_type als instanz erzeugen, wenn noch nicht drin. aus learner?
     screw_type = IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#M4_Screw")
-    screwing_resource.write_time_series_data_to_knowledge_graph(
-        screw_type
-    )  # TODO:hier drin noch daten zu dem screw_type abrufen
+    screwing_resource.write_time_series_data_to_knowledge_graph(screw_type)
 
     process_instance_iri = IRI(
         "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation1"

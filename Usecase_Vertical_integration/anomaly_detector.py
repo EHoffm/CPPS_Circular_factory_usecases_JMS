@@ -17,7 +17,7 @@ class AnomalyDetector:
         """retrieves Time Series Data of an unscrewing process as a node via OGM.fetch(), processes well known json format, returns Time Serias as
         preferred Data Structure (e.g. list of floats)
         """
-        # TODO: hier werden auch die Daten von dem Schraubentyp geholt
+
         property_chains = [
             [
                 IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
@@ -41,6 +41,11 @@ class AnomalyDetector:
                 IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
                 IRI(
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
+                ),
+            ],
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
                 ),
             ],
             [
@@ -75,64 +80,55 @@ class AnomalyDetector:
         # TODO MG: Hier implementieren wir die Anomalieerkennung Logik
         # Parameters for the anomaly detection, to check features of the time series data - learned in learner.py
 
-        lower_tightening_torque = data[
-            IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerTighteningTorque"
-            ).lined
+        hasScrew_iri_lined = IRI(
+            "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"
+        ).lined
+        lower_tightening_torque = data[f"{hasScrew_iri_lined}"][0][
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerTighteningTorque').lined}"
         ]  # double, Indicates the minimum torque required to properly tighten the screw - to check if torque can be applied to it.
-        print(f"Lower tightening torque: {lower_tightening_torque}")
-        hasUpperDynamicLoseningTorque = data[
-            IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUpperDynamicLoseningTorque"
-            ).lined
+        print(f"lower_tightening_torque: {lower_tightening_torque}")
+        hasUpperDynamicLoseningTorque = data[f"{hasScrew_iri_lined}"][0][
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUpperDynamicLoseningTorque').lined}"
         ]  # double, Specifies the maximum torque at which the screw may loosen during unscrewing
-        hasLowerAxialForce = data[
-            IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerAxialForce"
-            ).lined
+        hasLowerAxialForce = data[f"{hasScrew_iri_lined}"][0][
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerAxialForce').lined}"
         ]  # double; minimum axial force that indicates the screw moving towards the screwdriver
         hasSuccessStatus = data[
-            IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus")
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus').lined}"
         ]  # "Successfull" or "Loose Anchor" or Rounded Head" or ...
-        hasAxialForceApproach = data[
-            IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach"
-            ).lined
-        ]  # double; The axial force measured while the screwdriver approaches the screw head.
-        hasPositionOnApproach = data[
-            IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
-            ).lined
+        # TODO: Max fragen, ob das drin sein muss
+        # hasAxialForceApproach = data[
+        #    f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach').lined}"
+        # ]  # double; The axial force measured while the screwdriver approaches the screw head.
+        hasPositionOnApproach = data[f"{hasScrew_iri_lined}"][0][
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach').lined}"
         ]  # double; The position along the screw axis when approaching the screw
 
         # TODO: hier ändern und neu setzen von hasSuccessStatus oder soll das den Zustand wiederspiegeln?
         data[
-            IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus")
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus').lined}"
         ] = "Successful"
 
         # mocked Timeseries, in this case from knwoledge graph - in real implementation from robot control
-        unscrewing_torque_time_series = json.loads(
+        unscrewing_torque_time_series_string = str(
             data[
-                IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
-                )
+                f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData').lined}"
+            ][0][
+                f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData').lined}"
             ][
-                IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
-                )
+                0
             ]
         )
-        axial_force_time_series = json.loads(
-            data[
-                IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData"
-                )
-            ][
-                IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
-                )
-            ]
-        )
+        unscrewing_torque_time_series = json.loads(unscrewing_torque_time_series_string)
+        axial_force_time_series_string = data[
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData').lined}"
+        ][0][
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData').lined}"
+        ][
+            0
+        ]
+
+        axial_force_time_series = json.loads(axial_force_time_series_string)
 
         # Anomaly detection logic
         # iterate over unscrewing_torque_time_series and axial_force_time_series and position time series simultaneously
