@@ -32,16 +32,24 @@ def main():
     # Example usage:
 
     screw_type = IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#M4_Screw")
-    screwing_resource.write_time_series_data_to_knowledge_graph(screw_type)
+    screwing_resource.write_time_series_data_to_knowledge_graph(
+        screw_type
+    )  # TODO:hier drin noch daten zu dem screw_type abrufen
 
     process_instance_iri = IRI(
         "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation1"
     )
     fetched_data = anomaly_detector.fetch_process_model(process_instance_iri)
+
+    print("Fetched data for anomaly detection:")
+    print(json.dumps(fetched_data, indent=2))  # Pretty-print the fetched data
+
     annotated_data = anomaly_detector.detect_anomaly(
         fetched_data
     )  # TODO: ab einschließlich dieser Zeile noch zu debuggen und schauen, ob fetched_data das richtige Format liefert
-    anomaly_detector.update_instance(process_instance_iri, annotated_data)
+    anomaly_detector.update_instance(
+        process_instance_iri, annotated_data
+    )  # TODO: prüfen ob Problem, wenn named_graph_iri nicht mitgegeben
     # late at night, the learner awakes. he picks one specific screw type and learns from all process descriptions
     learner.get_all_process_descriptions()
     learner.learn_from_process_descriptions()

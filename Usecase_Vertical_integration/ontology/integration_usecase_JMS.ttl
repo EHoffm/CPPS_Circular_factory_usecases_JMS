@@ -97,7 +97,7 @@
     rdfs:comment "The axial force measured while the screwdriver approaches the screw head."@en .
 		
 :hasPositionOnApproach a owl:DatatypeProperty ;
-    rdfs:domain :unscrewingOperation ;
+    rdfs:domain :screw ;
     rdfs:range xsd:decimal ;
     rdfs:label "Position on approach"@en ;
     rdfs:comment "The position along the screw axis when approaching the screw."@en .

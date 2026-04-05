@@ -17,7 +17,32 @@ class AnomalyDetector:
         """retrieves Time Series Data of an unscrewing process as a node via OGM.fetch(), processes well known json format, returns Time Serias as
         preferred Data Structure (e.g. list of floats)
         """
+        # TODO: hier werden auch die Daten von dem Schraubentyp geholt
         property_chains = [
+            [
+                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerTighteningTorque"
+                ),
+            ],
+            [
+                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUpperDynamicLoseningTorque"
+                ),
+            ],
+            [
+                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerAxialForce"
+                ),
+            ],
+            [
+                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
+                ),
+            ],
             [
                 IRI(
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
@@ -49,20 +74,22 @@ class AnomalyDetector:
         """
         # TODO MG: Hier implementieren wir die Anomalieerkennung Logik
         # Parameters for the anomaly detection, to check features of the time series data - learned in learner.py
+
         lower_tightening_torque = data[
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerTighteningTorque"
-            )
+            ).lined
         ]  # double, Indicates the minimum torque required to properly tighten the screw - to check if torque can be applied to it.
+        print(f"Lower tightening torque: {lower_tightening_torque}")
         hasUpperDynamicLoseningTorque = data[
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUpperDynamicLoseningTorque"
-            )
+            ).lined
         ]  # double, Specifies the maximum torque at which the screw may loosen during unscrewing
         hasLowerAxialForce = data[
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerAxialForce"
-            )
+            ).lined
         ]  # double; minimum axial force that indicates the screw moving towards the screwdriver
         hasSuccessStatus = data[
             IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus")
@@ -70,14 +97,15 @@ class AnomalyDetector:
         hasAxialForceApproach = data[
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach"
-            )
+            ).lined
         ]  # double; The axial force measured while the screwdriver approaches the screw head.
         hasPositionOnApproach = data[
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
-            )
+            ).lined
         ]  # double; The position along the screw axis when approaching the screw
 
+        # TODO: hier ändern und neu setzen von hasSuccessStatus oder soll das den Zustand wiederspiegeln?
         data[
             IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus")
         ] = "Successful"
