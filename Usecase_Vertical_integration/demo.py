@@ -10,9 +10,7 @@ from learner import Learner
 
 
 def main():
-    print(load_dotenv())  # Call this at the start of your script
     credentials = GraphDBCredentials.from_env()
-    print(credentials)
     ogm = OGM(db=GraphDB(credentials=credentials), loader=None)
     screwing_resource = ScrewingResource()
     anomaly_detector = AnomalyDetector(threshold=0.1)

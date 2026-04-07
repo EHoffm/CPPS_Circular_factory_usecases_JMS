@@ -45,15 +45,16 @@ class AnomalyDetector:
             ],
             [
                 IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
-                ),
-            ],
-            [
-                IRI(
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
                 ),
                 IRI(
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+                ),
+            ],
+        ]
+        """            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
                 ),
             ],
             [
@@ -64,18 +65,26 @@ class AnomalyDetector:
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
                 ),
             ],
-        ]
-
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasRobotPositionTimeSeriesData"
+                ),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+                ),
+            ],
+            """
         class_scope = ClassScope.from_property_chains(property_chains)  # type: ignore
         fetched_instance = self.ogm.fetch(
-            class_scope=class_scope, instance_iri=instance_iri
+            class_scope=class_scope,
+            instance_iri=instance_iri,
         )
         pydantic_model = fetched_instance.materialize()
         serialized = pydantic_model.model_dump()
         print("Fetched data for anomaly detection:")
         print(json.dumps(serialized, indent=2))
 
-        return fetched_instance.__dict__
+        return serialized
 
     def detect_anomaly(self, data: dict) -> dict:
         """processes fetched data, detects anomalies, returns annotated data structure
