@@ -1,5 +1,6 @@
 from graph_db_interface import GraphDB, GraphDBCredentials, IRI
 from kapps_ogm.ogm import OGM
+from kapps_ogm.utils.class_scope import ClassScope
 import json
 
 from dotenv import load_dotenv
@@ -31,12 +32,16 @@ def main():
 
     # Example usage:
     # TODO: noch den screw_type als instanz erzeugen, wenn noch nicht drin. aus learner?
-    screw_type = IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#M4_Screw")
-    screwing_resource.write_time_series_data_to_knowledge_graph(screw_type)
-
     process_instance_iri = IRI(
         "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation1"
     )
+    screw_type = IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#M4_Screw")
+
+    screwing_resource.write_time_series_data_to_knowledge_graph(
+        screw_type,
+        instance_iri=process_instance_iri,
+    )
+
     fetched_data = anomaly_detector.fetch_process_model(process_instance_iri)
 
     print("Fetched data for anomaly detection:")

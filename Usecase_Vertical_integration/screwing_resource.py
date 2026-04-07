@@ -13,7 +13,16 @@ class ScrewingResource:
         credentials = GraphDBCredentials.from_env()
         self.ogm = OGM(db=GraphDB(credentials=credentials), loader=None)
 
-    def write_time_series_data_to_knowledge_graph(self, screw_type: IRI):
+    def write_time_series_data_to_knowledge_graph(
+        self,
+        screw_type: IRI,
+        instance_iri: IRI = IRI(
+            "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperationDefaultInstance"
+        ),
+    ):
+        named_graph_iri = IRI(
+            "http://w3id.org/circularfactory/UsecaseVerticalIntegrationInstances"
+        )
         # Hinweis die values success und missing_screw werden hier aktuell nicht genutzt
         screw_types = {
             IRI(
@@ -24,129 +33,199 @@ class ScrewingResource:
             ): "missing_screw",
             # IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#M5_Screw"): "M5_Screw",
         }
-        if screw_type in screw_types:
-            screw_types = {screw_type: screw_types[screw_type]}
 
-        for i, screw in enumerate(
-            screw_types
-        ):  # TODO: MG: Hier mocken wir zeitreihen Daten. In der echten Implementierung würde hier eine transformerzelle angesteuert
-            # die zeitreihen werden dann im KG Abgelegt
-            # simulates a screwing process and randomly generates a result data structure
-            result = {}
-            # data: {hasScrew: screw_type,
-            #    hasunscrewingTorqueTimeSeriesData: [...],
-            #    hasAxialForceTimeSeriesData: [...]}
-            pdData = pd.read_csv(f"unscrewing_timeseries/{screw_types[screw]}.csv")
-            unscrewing_torque_time_series = pdData[
-                "UnscrewingTorque"
-            ].to_list()  # TODO: das hier muss noch als daten in TimeSeriesData Instanz
-            axial_force_time_series = pdData["AxialForce"].to_list()
-            robot_position_time_series = pdData["RobotPosition"].to_list()
-
-            named_graph_iri = IRI(
-                "http://w3id.org/circularfactory/UsecaseVerticalIntegrationInstances"
-            )
-
-            # Create the new TimeSeriesData instances and persist it to the knowledge graph
-            time_series_scope = ClassScope.from_property_chains(
-                [
-                    [
-                        IRI(
-                            "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
-                        )
-                    ]
-                ]
-            )
-            time_series_iri = IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#TimeSeriesData"
-            )
-            temp_timeSeriesInstance = self.ogm.create(
-                class_iri=time_series_iri,
-                class_scope=time_series_scope,
-                data={
-                    IRI(
-                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
-                    ): [str(unscrewing_torque_time_series)],
-                },
-                persist=True,
-                named_graph=named_graph_iri,
-            )
-            unscrewing_torque_time_series_iri = temp_timeSeriesInstance.id
-
-            temp_timeSeriesInstance = self.ogm.create(
-                class_iri=time_series_iri,
-                class_scope=time_series_scope,
-                data={
-                    IRI(
-                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
-                    ): [str(axial_force_time_series)],
-                },
-                persist=True,
-                named_graph=named_graph_iri,
-            )
-            axial_force_time_series_iri = temp_timeSeriesInstance.id
-
-            temp_timeSeriesInstance = self.ogm.create(
-                class_iri=time_series_iri,
-                class_scope=time_series_scope,
-                data={
-                    IRI(
-                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
-                    ): [str(robot_position_time_series)],
-                },
-                persist=True,
-                named_graph=named_graph_iri,
-            )
-            robot_position_time_series_iri = temp_timeSeriesInstance.id
-
-            # Data for the unscrewing operation instance, linking to the screw type and the time series data
-            property_chains = [
-                [IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew")],
+        # Create screw instance with properties if it doesn't exist
+        screw_class_scope = ClassScope.from_property_chains(
+            [
                 [
                     IRI(
-                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerTighteningTorque"
                     )
                 ],
                 [
                     IRI(
-                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData"
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUpperDynamicLoseningTorque"
                     )
                 ],
                 [
                     IRI(
-                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasRobotPositionTimeSeriesData"
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerAxialForce"
+                    )
+                ],
+                [
+                    IRI(
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
                     )
                 ],
             ]
-            unscrewing_operation_scope = ClassScope.from_property_chains(
-                property_chains
-            )
-            data = {
-                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"): [
-                    {"id": screw}
-                ],
-                IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
-                ): [{"id": unscrewing_torque_time_series_iri}],
-                IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData"
-                ): [{"id": axial_force_time_series_iri}],
-                IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasRobotPositionTimeSeriesData"
-                ): [{"id": robot_position_time_series_iri}],
-            }
+        )
 
-            # TODO: hier bitte instance_iri anpassen, wenn nicht mehr fest eine instanz in der demo genutzt wird
-            # oder wenn noch geprüft wird, ob die instance_iri so schon existiert
+        # Mock values for screw properties (in real implementation, these would come from a database or configuration)
+        screw_data = {
+            IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerTighteningTorque"
+            ): [5.0],
+            IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUpperDynamicLoseningTorque"
+            ): [10.0],
+            IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerAxialForce"
+            ): [2.0],
+            IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
+            ): [0.0],
+        }
+
+        try:
+            # Try to create/update the screw instance
             self.ogm.create(
-                instance_iri=IRI(
-                    f"https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation{i+1}"
-                ),
+                instance_iri=screw_type,
                 class_iri=IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#unscrewingOperation"
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#screw"
                 ),
-                class_scope=unscrewing_operation_scope,
-                data=data,
+                class_scope=screw_class_scope,
+                data=screw_data,
                 persist=True,
                 named_graph=named_graph_iri,
             )
+            print(f"Created/updated screw instance: {screw_type}")
+        except Exception as e:
+            print(f"Screw instance {screw_type} might already exist or error: {e}")
+
+        fetched_instance = self.ogm.fetch(
+            class_scope=screw_class_scope, instance_iri=screw_type
+        )  # type: ignore TODO: class_scope.from_property_chains(prop_chains)
+        pydantic_model = fetched_instance.materialize()
+        serialized = pydantic_model.model_dump()
+        print("Fetched screw type data:")
+        print(json.dumps(serialized, indent=2))  # Pretty-print the fetched screw type
+
+        # TODO: MG: Hier mocken wir zeitreihen Daten. In der echten Implementierung würde hier eine transformerzelle angesteuert
+        # die zeitreihen werden dann im KG Abgelegt
+        # simulates a screwing process and randomly generates a result data structure
+        result = {}
+        # data: {hasScrew: screw_type,
+        #    hasunscrewingTorqueTimeSeriesData: [...],
+        #    hasAxialForceTimeSeriesData: [...]}
+        pdData = pd.read_csv(f"unscrewing_timeseries/{screw_types[screw_type]}.csv")
+        unscrewing_torque_time_series = pdData[
+            "UnscrewingTorque"
+        ].to_list()  # TODO: das hier muss noch als daten in TimeSeriesData Instanz
+        print(
+            f"Unscrewing Torque Time Series for {screw_type}: {unscrewing_torque_time_series}"
+        )
+        axial_force_time_series = pdData["AxialForce"].to_list()
+        print(f"Axial Force Time Series for {screw_type}: {axial_force_time_series}")
+        robot_position_time_series = pdData["RobotPosition"].to_list()
+        print(
+            f"Robot Position Time Series for {screw_type}: {robot_position_time_series}"
+        )
+
+        # Create the new TimeSeriesData instances and persist it to the knowledge graph
+        time_series_scope = ClassScope.from_property_chains(
+            [
+                [
+                    IRI(
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+                    )
+                ]
+            ]
+        )
+        time_series_iri = IRI(
+            "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#TimeSeriesData"
+        )
+        temp_timeSeriesInstance = self.ogm.create(
+            class_iri=time_series_iri,
+            class_scope=time_series_scope,
+            data={
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+                ): [json.dumps(unscrewing_torque_time_series)],
+            },
+            persist=True,
+            named_graph=named_graph_iri,
+        )
+        unscrewing_torque_time_series_iri = temp_timeSeriesInstance.id
+        print(
+            f"Created TimeSeriesData instance for unscrewing torque with IRI: {unscrewing_torque_time_series_iri}"
+        )
+
+        temp_timeSeriesInstance = self.ogm.create(
+            class_iri=time_series_iri,
+            class_scope=time_series_scope,
+            data={
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+                ): [json.dumps(axial_force_time_series)],
+            },
+            persist=True,
+            named_graph=named_graph_iri,
+        )
+        axial_force_time_series_iri = temp_timeSeriesInstance.id
+        print(
+            f"Created TimeSeriesData instance for axial force with IRI: {axial_force_time_series_iri}"
+        )
+
+        temp_timeSeriesInstance = self.ogm.create(
+            class_iri=time_series_iri,
+            class_scope=time_series_scope,
+            data={
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+                ): [json.dumps(robot_position_time_series)],
+            },
+            persist=True,
+            named_graph=named_graph_iri,
+        )
+        robot_position_time_series_iri = temp_timeSeriesInstance.id
+        print(
+            f"Created TimeSeriesData instance for robot position with IRI: {robot_position_time_series_iri}"
+        )
+
+        # Data for the unscrewing operation instance, linking to the screw type and the time series data
+        property_chains = [
+            [IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew")],
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
+                )
+            ],
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData"
+                )
+            ],
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasRobotPositionTimeSeriesData"
+                )
+            ],
+        ]
+        unscrewing_operation_scope = ClassScope.from_property_chains(property_chains)
+        data = {
+            IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"): [
+                {"id": screw_type}
+            ],
+            IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
+            ): [{"id": unscrewing_torque_time_series_iri}],
+            IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData"
+            ): [{"id": axial_force_time_series_iri}],
+            IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasRobotPositionTimeSeriesData"
+            ): [{"id": robot_position_time_series_iri}],
+        }
+
+        # TODO: hier bitte instance_iri anpassen, wenn nicht mehr fest eine instanz in der demo genutzt wird
+        # oder wenn noch geprüft wird, ob die instance_iri so schon existiert
+        self.ogm.create(
+            instance_iri=instance_iri,
+            class_iri=IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#unscrewingOperation"
+            ),
+            class_scope=unscrewing_operation_scope,
+            data=data,
+            persist=True,
+            named_graph=named_graph_iri,
+        )
