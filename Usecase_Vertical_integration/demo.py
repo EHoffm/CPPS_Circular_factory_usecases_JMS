@@ -44,9 +44,6 @@ def main():
 
     fetched_data = anomaly_detector.fetch_process_model(process_instance_iri)
 
-    print("Fetched data for anomaly detection:")
-    print(json.dumps(fetched_data, indent=2))  # Pretty-print the fetched data
-
     annotated_data = anomaly_detector.detect_anomaly(
         fetched_data
     )  # TODO: ab einschließlich dieser Zeile noch zu debuggen und schauen, ob fetched_data das richtige Format liefert

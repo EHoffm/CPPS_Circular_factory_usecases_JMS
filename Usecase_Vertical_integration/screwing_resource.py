@@ -134,7 +134,10 @@ class ScrewingResource:
         time_series_iri = IRI(
             "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#TimeSeriesData"
         )
-        temp_timeSeriesInstance = self.ogm.create(
+        timeSeriesInstanceTorque = self.ogm.create(
+            instance_iri=IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingTorqueTimeSeriesDataInstance1"
+            ),
             class_iri=time_series_iri,
             class_scope=time_series_scope,
             data={
@@ -145,12 +148,21 @@ class ScrewingResource:
             persist=True,
             named_graph=named_graph_iri,
         )
-        unscrewing_torque_time_series_iri = temp_timeSeriesInstance.id
+        unscrewing_torque_time_series_iri = IRI(timeSeriesInstanceTorque.instance.id)
+        unscrewing_data = timeSeriesInstanceTorque.instance.__dict__[
+            f"{IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+            ).lined}"
+        ][0]
+
         print(
-            f"Created TimeSeriesData instance for unscrewing torque with IRI: {unscrewing_torque_time_series_iri}"
+            f"Created TimeSeriesData instance for unscrewing torque with IRI: {unscrewing_torque_time_series_iri} with data: {unscrewing_data}"
         )
 
-        temp_timeSeriesInstance = self.ogm.create(
+        timeSeriesInstanceAxialForce = self.ogm.create(
+            instance_iri=IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#AxialForceTimeSeriesDataInstance1"
+            ),
             class_iri=time_series_iri,
             class_scope=time_series_scope,
             data={
@@ -161,12 +173,21 @@ class ScrewingResource:
             persist=True,
             named_graph=named_graph_iri,
         )
-        axial_force_time_series_iri = temp_timeSeriesInstance.id
+        axial_force_time_series_iri = timeSeriesInstanceAxialForce.instance.id
+        axial_force_data = timeSeriesInstanceAxialForce.instance.__dict__[
+            f"{IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+            ).lined}"
+        ][0]
+
         print(
-            f"Created TimeSeriesData instance for axial force with IRI: {axial_force_time_series_iri}"
+            f"Created TimeSeriesData instance for axial force with IRI: {axial_force_time_series_iri} with data {axial_force_data}"
         )
 
-        temp_timeSeriesInstance = self.ogm.create(
+        timeSeriesInstancePosition = self.ogm.create(
+            instance_iri=IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#RobotPositionTimeSeriesDataInstance1"
+            ),
             class_iri=time_series_iri,
             class_scope=time_series_scope,
             data={
@@ -177,9 +198,15 @@ class ScrewingResource:
             persist=True,
             named_graph=named_graph_iri,
         )
-        robot_position_time_series_iri = temp_timeSeriesInstance.id
+        robot_position_time_series_iri = timeSeriesInstancePosition.instance.id
+        robot_position_data = timeSeriesInstancePosition.instance.__dict__[
+            f"{IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+            ).lined}"
+        ][0]
+
         print(
-            f"Created TimeSeriesData instance for robot position with IRI: {robot_position_time_series_iri}"
+            f"Created TimeSeriesData instance for robot position with IRI: {robot_position_time_series_iri} with data {robot_position_data}"
         )
 
         # Data for the unscrewing operation instance, linking to the screw type and the time series data

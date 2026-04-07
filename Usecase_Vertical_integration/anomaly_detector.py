@@ -13,7 +13,7 @@ class AnomalyDetector:
         self.threshold = threshold
         self.ogm = OGM(db=GraphDB(credentials=credentials), loader=None)
 
-    def fetch_process_model(self, instance_iri: IRI):
+    def fetch_process_model(self, instance_iri: IRI) -> dict:
         """retrieves Time Series Data of an unscrewing process as a node via OGM.fetch(), processes well known json format, returns Time Serias as
         preferred Data Structure (e.g. list of floats)
         """
@@ -67,11 +67,15 @@ class AnomalyDetector:
         ]
 
         class_scope = ClassScope.from_property_chains(property_chains)  # type: ignore
-        fetched_instance = self.ogm.fetch(class_scope=class_scope, instance_iri=instance_iri)  # type: ignore TODO: class_scope.from_property_chains(prop_chains)
+        fetched_instance = self.ogm.fetch(
+            class_scope=class_scope, instance_iri=instance_iri
+        )
         pydantic_model = fetched_instance.materialize()
         serialized = pydantic_model.model_dump()
+        print("Fetched data for anomaly detection:")
+        print(json.dumps(serialized, indent=2))
 
-        return serialized
+        return fetched_instance.__dict__
 
     def detect_anomaly(self, data: dict) -> dict:
         """processes fetched data, detects anomalies, returns annotated data structure
