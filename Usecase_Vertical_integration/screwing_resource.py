@@ -141,16 +141,6 @@ class ScrewingResource:
             persist=True,
             named_graph=named_graph_iri,
         )
-        fetched_instance = self.ogm.fetch(
-            class_scope=time_series_scope,
-            instance_iri=IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingTorqueTimeSeriesDataInstance1"
-            ),
-        )
-        pydantic_model = fetched_instance.materialize()  # TEST
-        serialized = pydantic_model.model_dump()
-        print("Fetched unscrewing torque time series data:")
-        print(json.dumps(serialized, indent=2))
 
         timeSeriesInstanceAxialForce = self.ogm.create(
             instance_iri=IRI(
@@ -166,16 +156,6 @@ class ScrewingResource:
             persist=True,
             named_graph=named_graph_iri,
         )
-        fetched_instance = self.ogm.fetch(
-            class_scope=time_series_scope,
-            instance_iri=IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#AxialForceTimeSeriesDataInstance1"
-            ),
-        )
-        pydantic_model = fetched_instance.materialize()  # TEST
-        serialized = pydantic_model.model_dump()
-        print("Fetched axial force time series data:")
-        print(json.dumps(serialized, indent=2))
 
         timeSeriesInstancePosition = self.ogm.create(
             instance_iri=IRI(
@@ -253,6 +233,9 @@ class ScrewingResource:
                     )
                 }
             ],
+            IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
+            ): [""],
         }
 
         # TODO: hier bitte instance_iri anpassen, wenn nicht mehr fest eine instanz in der demo genutzt wird

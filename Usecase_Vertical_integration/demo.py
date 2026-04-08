@@ -46,7 +46,7 @@ def main():
         fetched_data
     )  # TODO: ab einschließlich dieser Zeile noch zu debuggen und schauen, ob fetched_data das richtige Format liefert
     anomaly_detector.update_instance(
-        process_instance_iri, annotated_data
+        instance_iri=process_instance_iri, data=annotated_data
     )  # TODO: prüfen ob Problem, wenn named_graph_iri nicht mitgegeben
     # late at night, the learner awakes. he picks one specific screw type and learns from all process descriptions
     learner.get_all_process_descriptions()
