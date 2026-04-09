@@ -164,7 +164,14 @@ else:
 
             # Instantiate modules first
             with st.spinner("⚙️ Instantiating modules..."):
-                module_results = instantiate_modules(st.session_state.modules, ogm)
+                concurrent_guard_override = st.session_state.get(
+                    "flexconveyor_concurrent_guard_override", False
+                )
+                module_results = instantiate_modules(
+                    st.session_state.modules,
+                    ogm,
+                    concurrent_guard_override=concurrent_guard_override,
+                )
 
             # Check if any modules were successfully instantiated
             running_modules = [
@@ -178,7 +185,8 @@ else:
 
                 # Instantiate WMS after modules
                 with st.spinner("🏭 Instantiating WMS..."):
-                    wms_result = instantiate_wms(ogm)
+                    number_of_boxes = st.session_state.get("wms_number_of_boxes", 1)
+                    wms_result = instantiate_wms(ogm, number_of_boxes=number_of_boxes)
 
                 if wms_result.get("status") == "running":
                     st.success("✅ MockWMS instantiated successfully!")
@@ -203,7 +211,8 @@ else:
 
             # Instantiate WMS
             with st.spinner("🏭 Instantiating WMS..."):
-                wms_result = instantiate_wms(ogm)
+                number_of_boxes = st.session_state.get("wms_number_of_boxes", 1)
+                wms_result = instantiate_wms(ogm, number_of_boxes=number_of_boxes)
 
             if wms_result.get("status") == "running":
                 st.success("✅ MockWMS instantiated successfully!")

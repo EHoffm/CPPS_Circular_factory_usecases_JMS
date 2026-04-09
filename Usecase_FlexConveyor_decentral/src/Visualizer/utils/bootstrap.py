@@ -262,7 +262,10 @@ def _wrap_literal_iris_as_nodes(data: Any) -> Any:
 
 
 def instantiate_modules(
-    modules: List[dict[str, Any]], ogm: OGM, host: str = "localhost"
+    modules: List[dict[str, Any]],
+    ogm: OGM,
+    host: str = "localhost",
+    concurrent_guard_override: bool = False,
 ) -> List[dict[str, Any]]:
     """
     Instantiate FlexConveyor modules into the knowledge base and start their middleware servers.
@@ -271,6 +274,7 @@ def instantiate_modules(
         modules: List of module JSON objects to instantiate
         ogm: The OGM instance connected to GraphDB
         host: Host to bind REST API servers to (default: "localhost", use "0.0.0.0" for distributed)
+        concurrent_guard_override: If True, modules can accept boxes even when busy (default: False)
 
     Returns:
         List of instantiation results with module IDs and API URLs
@@ -388,7 +392,12 @@ def instantiate_modules(
 
                 # Initialize FlexConveyor module with the created node's IRI
                 print(f"  → Initializing middleware...")
-                flex_module = FlexConveyor(node.id, ogm=ogm, host=host)
+                flex_module = FlexConveyor(
+                    node.id,
+                    ogm=ogm,
+                    host=host,
+                    concurrent_guard_override=concurrent_guard_override,
+                )
                 print(f"  ✓ Middleware initialized")
                 time.sleep(1)
 
@@ -452,7 +461,9 @@ def instantiate_modules(
     # Placeholder to show OGM state after instantiation
 
 
-def instantiate_wms(ogm: OGM, host: str = "localhost") -> dict[str, Any]:
+def instantiate_wms(
+    ogm: OGM, host: str = "localhost", number_of_boxes: int = 1
+) -> dict[str, Any]:
     """
     Instantiate the Mock WMS into the system.
 
@@ -461,6 +472,7 @@ def instantiate_wms(ogm: OGM, host: str = "localhost") -> dict[str, Any]:
     Args:
         ogm: The OGM instance connected to GraphDB
         host: Host to bind REST API server to (default: "localhost", use "0.0.0.0" for distributed)
+        number_of_boxes: Number of boxes the WMS will spawn into the system (default: 1)
 
     Returns:
         Dictionary with WMS instantiation result
@@ -506,7 +518,7 @@ def instantiate_wms(ogm: OGM, host: str = "localhost") -> dict[str, Any]:
 
         # Initialize WMS
         print("  → Initializing WMS...")
-        wms = MockWMS(ogm=ogm, host=host)
+        wms = MockWMS(ogm=ogm, host=host, number_of_boxes=number_of_boxes)
         print("  ✓ WMS initialized")
         time.sleep(1)
 

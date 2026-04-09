@@ -56,7 +56,9 @@ class MockWMS:
             cls._port_counter += 1
             return cls._port_counter
 
-    def __init__(self, ogm: Optional[OGM] = None, host: str = "0.0.0.0"):
+    def __init__(
+        self, ogm: OGM, number_of_boxes: Optional[int] = 1, host: str = "0.0.0.0"
+    ):
         """Initialize the WMS service."""
         if ogm is None:
             raise ValueError("OGM instance is required to initialize MockWMS")
@@ -76,7 +78,7 @@ class MockWMS:
         self.spawn_after_accept = True  # Auto-spawn boxes after acceptance
         self.initialized = False
 
-        self.number_of_boxes: int = 2
+        self.number_of_boxes: int = number_of_boxes
 
         self.logger_parent = logging.getLogger("MockWMS")
         self.logger = self.logger_parent.getChild("SubProjectLogic")

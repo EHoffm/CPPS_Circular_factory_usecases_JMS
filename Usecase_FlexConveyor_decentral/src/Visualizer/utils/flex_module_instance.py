@@ -833,6 +833,34 @@ def render_flex_module_instantiation(ogm: OGM):
 
         # Instantiate button - always visible when modules exist
         st.divider()
+
+        # Configuration options for instantiation
+        st.markdown("**⚙️ Instantiation Options**")
+        col_opt1, col_opt2 = st.columns([1, 1])
+        with col_opt1:
+            number_of_boxes = st.number_input(
+                "Number of boxes to spawn (WMS)",
+                min_value=1,
+                max_value=100,
+                value=st.session_state.get("wms_number_of_boxes", 1),
+                step=1,
+                help="Number of boxes that the WMS will spawn into the system",
+                key="wms_number_of_boxes_input",
+            )
+            st.session_state.wms_number_of_boxes = number_of_boxes
+
+        with col_opt2:
+            concurrent_guard = st.checkbox(
+                "Concurrent guard override (FlexConveyor)",
+                value=st.session_state.get(
+                    "flexconveyor_concurrent_guard_override", False
+                ),
+                help="If enabled, modules can accept boxes even when busy (for testing SHACL violations)",
+                key="flexconveyor_concurrent_guard_override_input",
+            )
+            st.session_state.flexconveyor_concurrent_guard_override = concurrent_guard
+
+        st.divider()
         col_inst1, col_inst2 = st.columns([1, 1])
         with col_inst1:
             if st.button(
