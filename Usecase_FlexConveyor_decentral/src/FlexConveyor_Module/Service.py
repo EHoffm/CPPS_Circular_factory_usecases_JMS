@@ -1,6 +1,6 @@
 from typing import Optional, Any, Dict
 import aas_middleware as aas
-from graph_db_interface.utils.iri import IRI
+from graph_db_interface import IRI
 from pydantic import BaseModel
 import requests
 
@@ -16,7 +16,7 @@ class Service:
     resource_instance: IRI
     payload_model: Optional[BaseModel] = None
     _service_url: str = None
-    _service_name: str = None
+    name: str = None
     _service_instance: IRI = None
     _middleware: aas.Middleware = None
     _is_remote: bool = False
@@ -27,12 +27,17 @@ class Service:
         service_class: IRI,
         resource_instance: IRI,
         payload_model: Optional[BaseModel] = None,
+        logger: Optional[logging.Logger] = None,
     ):
         self.service_method = service_method
-        self.service_class = service_class
-        self.resource_instance = resource_instance
+        self.service_class = IRI(service_class)
+        self.resource_instance = IRI(resource_instance)
         self.payload_model = payload_model
-        self._service_name = self.service_method.__qualname__.split(".")[-1]
+        self.logger = logger or logging.getLogger(
+            f"Service-{self.resource_instance.fragment}-{self.name}"
+        )
+
+        self.name = self.service_method.__qualname__.split(".")[-1]
 
     @classmethod
     def fetch_remote_service(
@@ -41,6 +46,7 @@ class Service:
         service_class: IRI,
         payload_model: Optional[BaseModel],
         ogm: OGM,
+        logger: Optional[logging.Logger] = None,
     ) -> "Service":
         query = f"""
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -71,21 +77,22 @@ class Service:
         service_url = services[0]
 
         def remote_method(payload: BaseModel):
-            if not isinstance(payload, payload_model):
-                raise ValueError(
-                    f"Invalid payload type, expected {payload_model}, got {type(payload)}"
-                )
             return requests.post(
                 service_url,
                 json=payload.model_dump(),
                 timeout=None,
             )
 
+        logger = logger or logging.getLogger(
+            f"Service-Remote@{resource_instance.fragment}-{service_class.fragment}"
+        )
+
         service = cls(
             service_method=remote_method,
             service_class=service_class,
             resource_instance=resource_instance,
             payload_model=payload_model,
+            logger=logger,
         )
         service._service_url = service_url
         service._is_remote = True
@@ -94,9 +101,10 @@ class Service:
     def register_in_middleware(self, mw: aas.Middleware):
         if self._is_remote:
             raise ValueError("Remote services cannot be registered in middleware.")
+
         self._middleware = mw
         mw.workflow()(self.service_method)
-        logging.info(f"Registered service method {self._service_name} in middleware.")
+        self.logger.info(f"Registered in middleware with name '{self.name}'")
 
     def register_in_graph_db(self, host_url: str, ogm: OGM, named_graph: IRI = None):
         if self._is_remote:
@@ -106,7 +114,7 @@ class Service:
                 "Middleware must be registered before registering service in graph database."
             )
 
-        self._service_url = f"{host_url}/workflows/{self._service_name}/execute"
+        self._service_url = f"{host_url}/workflows/{self.name}/execute"
 
         property_chains = [
             [
@@ -134,17 +142,32 @@ class Service:
             named_graph=named_graph,
         )
         self._service_instance = service_node.id
-        logging.info(
-            f"Registered service in knowledge graph with IRI: {self._service_instance} and URL: {self._service_url}"
+        self.logger.info(
+            f"Registered in knowledge graph with IRI '{self._service_instance}' and URL '{self._service_url}'"
         )
 
-    def deregister(self, ogm: OGM):
+    def deregister_in_middleware(self, ogm: OGM):
         if self._is_remote:
             raise ValueError("Remote services cannot be deregistered.")
         self._service_instance = None
-        logging.warning(
-            f"TODO cleanup required for runtime service triples of module {self.resource_instance} (service node: {self._service_instance})"
-        )
+        self.logger.warning(f"Service middleware deregistration not yet implemented")
 
-    def __call__(self, *args, **kwds):
-        return self.service_method(*args, **kwds)
+    def deregister_in_graph_db(self, ogm: OGM, named_graph: IRI = None):
+        """Remove service registration from the knowledge graph."""
+        if self._is_remote:
+            raise ValueError("Remote services cannot be cleaned from graph database.")
+        if not self._service_instance:
+            self.logger.info("Service not registered in graph, skipping cleanup")
+            return
+
+        self.logger.warning(f"Service GraphDB deregistration not yet implemented")
+
+    def __call__(self, payload: BaseModel) -> dict[str, Any]:
+        if not isinstance(payload, self.payload_model):
+            raise ValueError(
+                f"Invalid payload type, expected {self.payload_model}, got {type(payload)}"
+            )
+        self.logger.info(f"Invoking with payload: {payload}")
+        response = self.service_method(payload)
+        self.logger.info(f"Completed with response: {response}")
+        return response

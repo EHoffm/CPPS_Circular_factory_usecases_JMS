@@ -191,6 +191,27 @@ else:
                     "❌ No modules were successfully instantiated. WMS not started."
                 )
 
+    # Handle WMS-only instantiation request
+    if st.session_state.get("wms_instantiation_requested", False):
+        ogm = get_ogm()
+        if ogm is None:
+            st.error("❌ OGM instance not found in session state.")
+            st.session_state.wms_instantiation_requested = False
+        else:
+            # Clear flag before instantiation
+            st.session_state.wms_instantiation_requested = False
+
+            # Instantiate WMS
+            with st.spinner("🏭 Instantiating WMS..."):
+                wms_result = instantiate_wms(ogm)
+
+            if wms_result.get("status") == "running":
+                st.success("✅ MockWMS instantiated successfully!")
+            else:
+                st.error(
+                    f"❌ WMS instantiation failed: {wms_result.get('error', 'Unknown error')}"
+                )
+
     section = st.radio(
         "Section",
         options=["🏗️ Bootstrap", "📊 Monitor", "🎮 Control"],
@@ -211,12 +232,6 @@ else:
                 else:
                     st.error("Failed to clear knowledge graph.")
             render_flex_module_instantiation(ogm)
-
-            st.divider()
-            st.info(
-                "ℹ️ **Box Generation**: Boxes are automatically spawned by the MockWMS entity "
-                "after module instantiation and after each delivery. No manual intervention needed."
-            )
 
     elif section == "📊 Monitor":
         st.header("Runtime Monitoring")

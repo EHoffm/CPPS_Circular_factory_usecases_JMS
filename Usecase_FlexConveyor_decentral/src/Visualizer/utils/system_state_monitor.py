@@ -32,11 +32,15 @@ def build_adjacency_matrix(ogm: OGM) -> dict[str, list[tuple[str | None, str | N
             triples_by_subject.setdefault(str(s), []).append((s, p, o))
 
         rdf_type = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
-        module_class = "http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule"
+        module_class = {
+            "http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule",
+            "http://w3id.org/circularfactory/FlexConveyor#EntryModule",
+            "http://w3id.org/circularfactory/FlexConveyor#ExitModule",
+        }
 
         modules: set[Any] = set()
         for s, p, o in all_triples:
-            if str(p) == rdf_type and str(o) == module_class:
+            if str(p) == rdf_type and str(o) in module_class:
                 modules.add(s)
 
         for module_iri in modules:
@@ -117,6 +121,10 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
             [
                 IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
                 IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection"),
+            ],
+            [
+                IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
+                IRI("http://w3id.org/circularfactory/FlexConveyor#onPort"),
             ],
         ]
         module_service = ogm.fetch(

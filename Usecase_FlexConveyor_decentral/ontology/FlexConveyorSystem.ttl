@@ -67,14 +67,14 @@
 
 :BoxState rdf:type owl:Class .
 
-:Created rdf:type owl:Class ;
-    rdfs:subClassOf :BoxState .
+:Created rdf:type :BoxState ,
+    owl:NamedIndividual .
 
-:InTransit rdf:type owl:Class ;
-    rdfs:subClassOf :BoxState .
+:InTransit rdf:type :BoxState ,
+    owl:NamedIndividual .
 
-:Delivered rdf:type owl:Class ;
-    rdfs:subClassOf :BoxState .
+:Delivered rdf:type :BoxState ,
+    owl:NamedIndividual .
 
 :Direction rdf:type owl:Class .
 

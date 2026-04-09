@@ -27,6 +27,10 @@ PROPERTY_CHAINS = [
         IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
         IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection"),
     ],
+    [
+        IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
+        IRI("http://w3id.org/circularfactory/FlexConveyor#onPort"),
+    ],
 ]
 
 CLASS_IRI = IRI("http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule")
@@ -137,13 +141,15 @@ def render_connection_item(
             ):
                 return None  # Signal to remove this connection
 
-        # Find connectsTo and direction keys (they might be mangled)
+        # Find connectsTo, direction, and onPort keys (they might be mangled)
         id_key = "id"
         id_value = ""
         connects_to_key = None
         direction_key = None
+        on_port_key = None
         connects_to_value = ""
         direction_value = ""
+        on_port_value = 0
 
         if isinstance(connection_data, dict):
             for key in connection_data.keys():
@@ -172,6 +178,16 @@ def render_connection_item(
                             direction_value = str(val[0])
                     elif not isinstance(val, (list, dict)):
                         direction_value = str(val)
+                elif "onport" in key.lower():
+                    on_port_key = key
+                    # Extract integer value
+                    val = connection_data[key]
+                    if isinstance(val, list) and len(val) > 0:
+                        on_port_value = int(val[0]) if val[0] is not None else 0
+                    elif isinstance(val, (int, str)) and val:
+                        on_port_value = int(val)
+                    else:
+                        on_port_value = 0
 
         if not id_value:
             id_value = get_next_connection_id(
@@ -226,6 +242,16 @@ def render_connection_item(
             key=f"{field_path}_direction_{index}",
         )
 
+        # Number input for onPort
+        new_on_port = st.number_input(
+            "Port Number",
+            min_value=0,
+            max_value=65535,
+            value=on_port_value,
+            step=1,
+            key=f"{field_path}_onPort_{index}",
+        )
+
         # Return updated connection data with original keys
         result = {id_key: new_connection_id}
         if connects_to_key:
@@ -234,6 +260,15 @@ def render_connection_item(
             )
         if direction_key:
             result[direction_key] = [{"id": new_direction}] if new_direction else [{}]
+
+        # Add onPort field
+        if on_port_key:
+            result[on_port_key] = [new_on_port]
+        else:
+            # Use the expected property name from the ontology
+            result["http://w3id.org/circularfactory/FlexConveyor#onPort"] = [
+                new_on_port
+            ]
 
         return result
 
@@ -601,6 +636,9 @@ def initialize_flex_instance_session_state():
     if "instantiation_requested" not in st.session_state:
         st.session_state.instantiation_requested = False
 
+    if "wms_instantiation_requested" not in st.session_state:
+        st.session_state.wms_instantiation_requested = False
+
 
 def render_flex_module_instantiation(ogm: OGM):
     """
@@ -797,7 +835,9 @@ def render_flex_module_instantiation(ogm: OGM):
         st.divider()
         col_inst1, col_inst2 = st.columns([1, 1])
         with col_inst1:
-            if st.button("⚡ Instantiate Modules", width="stretch", type="primary"):
+            if st.button(
+                "⚡ Instantiate Modules & WMS", width="stretch", type="primary"
+            ):
                 if not st.session_state.modules:
                     st.error(
                         "❌ No modules to instantiate. Add at least one module first."
@@ -806,6 +846,12 @@ def render_flex_module_instantiation(ogm: OGM):
                     # Set flag to trigger instantiation (persists across tab switches)
                     st.session_state.instantiation_requested = True
                     st.rerun()
+
+        with col_inst2:
+            if st.button("🏭 Instantiate WMS", width="stretch", type="secondary"):
+                # Set flag to trigger WMS instantiation
+                st.session_state.wms_instantiation_requested = True
+                st.rerun()
 
     # Show form if blank instance was created or editing
     if st.session_state.show_flex_form and st.session_state.flex_instance_fields:

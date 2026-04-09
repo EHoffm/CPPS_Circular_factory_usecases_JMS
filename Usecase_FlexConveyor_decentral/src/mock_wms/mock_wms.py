@@ -6,6 +6,7 @@ The WMS is responsible for:
 - Automatically spawning new boxes after initialization and after each delivery
 """
 
+import logging
 import threading
 import time
 from typing import Optional, Dict, Any, List
@@ -75,6 +76,11 @@ class MockWMS:
         self.spawn_after_accept = True  # Auto-spawn boxes after acceptance
         self.initialized = False
 
+        self.number_of_boxes: int = 2
+
+        self.logger_parent = logging.getLogger("MockWMS")
+        self.logger = self.logger_parent.getChild("SubProjectLogic")
+
         # Setup middleware data model (minimal, just for service registration)
         data_model = aas.DataModel()
         self.mw.load_data_model(
@@ -86,32 +92,46 @@ class MockWMS:
         # Register workflows
         def spawn_box(payload: SpawnBoxPayload) -> dict:
             """Spawn a box into the system."""
-            return self._spawn_box_workflow(
+            logger = self.logger_parent.getChild("SpawnBoxService")
+            logger.info(f"Invoked with payload: {payload}")
+            response = self._spawn_box_workflow(
                 box_iri=payload.box_iri,
                 origin_iri=payload.origin_iri,
                 destination_iri=payload.destination_iri,
             )
+            logger.info(f"Completed with response: {response}")
+            return response
 
         def accept_box(payload: AcceptBoxPayload) -> dict:
             """Accept a delivered box."""
-            return self._accept_box_workflow(box_iri=payload.box_iri)
+            logger = self.logger_parent.getChild("AcceptBoxService")
+            logger.info(f"Invoked with payload: {payload}")
+            response = self._accept_box_workflow(box_iri=payload.box_iri)
+            logger.info(f"Completed with response: {response}")
+            return response
 
         # Create and register services
         self.services.add(
             Service(
-                spawn_box,
-                IRI("http://w3id.org/circularfactory/FlexConveyor#SpawnBoxService"),
-                self.wms_id,
-                SpawnBoxPayload,
+                service_method=spawn_box,
+                service_class=IRI(
+                    "http://w3id.org/circularfactory/FlexConveyor#SpawnBoxService"
+                ),
+                resource_instance=self.wms_id,
+                payload_model=SpawnBoxPayload,
+                logger=self.logger_parent.getChild("SpawnBoxService"),
             )
         )
 
         self.services.add(
             Service(
-                accept_box,
-                IRI("http://w3id.org/circularfactory/FlexConveyor#AcceptBoxService"),
-                self.wms_id,
-                AcceptBoxPayload,
+                service_method=accept_box,
+                service_class=IRI(
+                    "http://w3id.org/circularfactory/FlexConveyor#AcceptBoxService"
+                ),
+                resource_instance=self.wms_id,
+                payload_model=AcceptBoxPayload,
+                logger=self.logger_parent.getChild("AcceptBoxService"),
             )
         )
 
@@ -119,14 +139,12 @@ class MockWMS:
         for service in self.services:
             service.register_in_middleware(self.mw)
 
-        print(f"✓ MockWMS initialized")
-        print(f"  Assigned port: {self.port}")
-        print(f"  Host: {self.host}")
+        self.logger.info(f"Initialization complete")
 
     def start(self):
         """Start the REST API server in a background thread."""
         if self.running:
-            print(f"⚠ WMS is already running at {self.url}")
+            self.logger.warning(f"WMS is already running at {self.url}")
             return
 
         self.running = True
@@ -157,17 +175,20 @@ class MockWMS:
                 ),
             )
 
-        print(f"\n{'='*70}")
-        print(f"✓ MockWMS REST API Started")
-        print(f"  WMS ID: {self.wms_id}")
-        print(f"  Accessible at: {self.url}")
-        print(f"  GUI access: http://localhost:{self.port}/docs")
-        print(f"{'='*70}\n")
+        self.logger.info(
+            f"\n{'='*70}\n"
+            f"  MockWMS REST API Started\n"
+            f"  Module ID:     {self.wms_id}\n"
+            f"  Accessible at: {self.url}\n"
+            f"  GUI access:    http://localhost:{self.port}/docs\n"
+            f"  Services:      {', '.join(s.name for s in self.services)}\n"
+            f"{'='*70}"
+        )
 
         # Spawn initial box after a short delay (let modules stabilize)
         if self.spawn_after_accept:
             threading.Thread(
-                target=self._auto_spawn_initial_box, daemon=True, name="InitialBoxSpawn"
+                target=self._spawn_initial_boxes, daemon=True, name="InitialBoxSpawn"
             ).start()
 
         self.initialized = True
@@ -184,14 +205,14 @@ class MockWMS:
         try:
             self.server.run()
         except Exception as e:
-            print(f"✗ WMS server error: {e}")
+            self.logger.error(f"WMS server error: {e}")
         finally:
             self.running = False
 
     def stop(self):
         """Stop the REST API server."""
         if not self.running:
-            print(f"⚠ WMS is not running")
+            self.logger.warning(f"WMS is not running")
             self._cleanup_services_in_knowledge_graph()
             return
 
@@ -205,20 +226,20 @@ class MockWMS:
                 self.server_thread.join(timeout=2)
 
         self._cleanup_services_in_knowledge_graph()
-        print(f"✓ MockWMS stopped")
+        self.logger.info(f"MockWMS stopped")
 
     def _cleanup_services_in_knowledge_graph(self):
         """Remove service registrations from the knowledge graph."""
         for service in self.services:
             try:
-                service.cleanup_from_graph_db(
+                service.deregister_in_graph_db(
                     ogm=self.ogm,
                     named_graph=IRI(
                         "http://w3id.org/circularfactory/FlexConveyorInstances"
                     ),
                 )
             except Exception as e:
-                print(f"  ⚠️  Error cleaning service {service.workflow_name}: {e}")
+                self.logger.warning(f"Error cleaning service {service.name}: {e}")
 
     def _get_next_box_iri(self) -> str:
         """Generate a unique box IRI."""
@@ -226,80 +247,170 @@ class MockWMS:
             self.box_counter += 1
             return f"http://w3id.org/circularfactory/BoxInstances#Box{self.box_counter:03d}"
 
-    def _get_free_modules(self) -> List[str]:
-        """Query the knowledge graph for modules without boxes."""
+    def _get_module_info(self) -> Dict[str, List[str]]:
+        """
+        Query the knowledge graph for module information in a single query.
+
+        Returns:
+            Dict containing:
+            - 'all_modules': All FlexConveyorModule instances
+            - 'entry_modules': EntryModule instances
+            - 'exit_modules': ExitModule instances
+            - 'free_modules': Modules without hasPossession
+        """
         FC = "http://w3id.org/circularfactory/FlexConveyor#"
-        module_class = IRI(f"{FC}FlexConveyorModule")
-        has_possession = IRI(f"{FC}hasPossession")
-        rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+        INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
 
-        # Find all modules
-        triples = self.ogm.db.triples_get(pred=rdf_type, obj=module_class)
-        all_modules = [str(triple[0]) for triple in triples]
+        query = f"""
+        PREFIX fc: <{FC}>
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        
+        SELECT DISTINCT ?module ?isEntry ?isExit ?hasPossession
+        WHERE {{
+            GRAPH <{INST}> {{
+                ?module rdf:type ?moduleType .
+                
+                OPTIONAL {{
+                    ?module fc:hasPossession ?box .
+                    BIND(true AS ?hasPossession)
+                }}
+            }}
+            
+            {{
+                FILTER(?moduleType = fc:FlexConveyorModule)
+            }} UNION {{
+                ?moduleType rdfs:subClassOf* fc:FlexConveyorModule .
+            }}
+            
+            OPTIONAL {{
+                GRAPH <{INST}> {{
+                    ?module rdf:type fc:EntryModule .
+                }}
+                BIND(true AS ?isEntry)
+            }}
+            
+            OPTIONAL {{
+                GRAPH <{INST}> {{
+                    ?module rdf:type fc:ExitModule .
+                }}
+                BIND(true AS ?isExit)
+            }}
+        }}
+        """
 
-        # Find free modules (without hasPossession)
-        free_modules = []
-        for module_iri in all_modules:
-            possessions = self.ogm.db.triples_get(
-                sub=IRI(module_iri), pred=has_possession
-            )
-            if not possessions:
-                free_modules.append(module_iri)
+        result = self.ogm.db.query(query=query, convert_bindings=True)
+        bindings = result.get("results", {}).get("bindings", [])
 
-        return free_modules
+        all_modules = set()
+        entry_modules = set()
+        exit_modules = set()
+        modules_with_possession = set()
 
-    def _get_all_modules(self) -> List[str]:
-        """Query the knowledge graph for all modules."""
-        FC = "http://w3id.org/circularfactory/FlexConveyor#"
-        module_class = IRI(f"{FC}FlexConveyorModule")
-        rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+        for binding in bindings:
+            module_iri = str(binding["module"])
+            all_modules.add(module_iri)
 
-        triples = self.ogm.db.triples_get(pred=rdf_type, obj=module_class)
-        return [str(triple[0]) for triple in triples]
+            if "isEntry" in binding and binding["isEntry"]:
+                entry_modules.add(module_iri)
 
-    def _auto_spawn_initial_box(self):
+            if "isExit" in binding and binding["isExit"]:
+                exit_modules.add(module_iri)
+
+            if "hasPossession" in binding and binding["hasPossession"]:
+                modules_with_possession.add(module_iri)
+
+        free_modules = all_modules - modules_with_possession
+
+        return {
+            "all_modules": list(all_modules),
+            "entry_modules": list(entry_modules),
+            "exit_modules": list(exit_modules),
+            "free_modules": list(free_modules),
+        }
+
+    def _spawn_initial_boxes(self):
         """Spawn the first box after initialization (with delay)."""
         time.sleep(3)  # Wait for system to stabilize
-        print("\n🎯 WMS: Spawning initial box...")
-        try:
-            self._auto_spawn_box()
-        except Exception as e:
-            print(f"  ✗ Error spawning initial box: {e}")
+        self.logger.info(f"Spawning {self.number_of_boxes} initial box(es)...")
+        for _ in range(self.number_of_boxes):
+            try:
+                self._spawn_random_box()
+            except Exception as e:
+                self.logger.error(f"Error spawning initial box: {e}")
 
-    def _auto_spawn_box(self):
-        """Automatically spawn a box on a random free module."""
-        free_modules = self._get_free_modules()
-        all_modules = self._get_all_modules()
+    def _spawn_random_box(self):
+        """
+        Spawn a box on a random free module.
+
+        Logic:
+        - If EntryModules exist: origins = free EntryModules
+        - If no EntryModules: origins = free non-ExitModules
+        - If ExitModules exist: destinations = all ExitModules
+        - If no ExitModules: destinations = all non-EntryModules (excluding chosen origin)
+        """
+        module_info = self._get_module_info()
+
+        all_modules = module_info["all_modules"]
+        entry_modules = module_info["entry_modules"]
+        exit_modules = module_info["exit_modules"]
+        free_modules = module_info["free_modules"]
 
         if len(all_modules) < 2:
-            print("  ⚠️  Need at least 2 modules to spawn a box (skipping)")
+            self.logger.warning(f"Need at least 2 modules to spawn a box (skipping)")
             return
 
-        if not free_modules:
-            print("  ⚠️  No free modules available (skipping)")
+        # Determine origin candidates (must be free)
+        if entry_modules:
+            # Use only EntryModules as origins
+            origin_candidates = [m for m in entry_modules if m in free_modules]
+        else:
+            # Use all non-ExitModules as origins
+            origin_candidates = [m for m in free_modules if m not in exit_modules]
+
+        if not origin_candidates:
+            self.logger.warning(f"No free origin modules available (skipping)")
             return
 
-        # Pick random origin from free modules
-        origin_iri = random.choice(free_modules)
+        # Pick random origin from candidates
+        origin_iri = random.choice(origin_candidates)
 
-        # Pick random destination (not origin)
-        destination_candidates = [m for m in all_modules if m != origin_iri]
+        # Determine destination candidates (can be occupied or free)
+        if exit_modules:
+            # Use only ExitModules as destinations
+            destination_candidates = exit_modules
+        else:
+            # Use all non-EntryModules as destinations (excluding chosen origin)
+            destination_candidates = [
+                m for m in all_modules if m not in entry_modules and m != origin_iri
+            ]
+
+        if not destination_candidates:
+            self.logger.warning(f"No valid destination modules available (skipping)")
+            return
+
+        # Pick random destination from candidates
         destination_iri = random.choice(destination_candidates)
 
         # Generate box IRI
         box_iri = self._get_next_box_iri()
 
-        print(f"  📦 Spawning: {box_iri}")
-        print(f"     Origin: {IRI(origin_iri)}")
-        print(f"     Destination: {IRI(destination_iri)}")
+        self.logger.info(
+            f"\n{'='*70}\n"
+            f"  Spawning new box into system\n"
+            f"  Box ID:      {box_iri}\n"
+            f"  Origin:      {origin_iri}\n"
+            f"  Destination: {destination_iri}\n"
+            f"{'='*70}\n"
+        )
 
         # Execute spawn workflow
         result = self._spawn_box_workflow(box_iri, origin_iri, destination_iri)
 
         if result.get("status") == "spawned":
-            print(f"  ✓ Box spawned successfully")
+            self.logger.info(f"Box spawned successfully")
         else:
-            print(f"  ✗ Spawn failed: {result.get('error')}")
+            self.logger.error(f"Spawn failed: {result.get('error')}")
 
     def _spawn_box_workflow(
         self, box_iri: str, origin_iri: str, destination_iri: str
@@ -360,9 +471,12 @@ class MockWMS:
             # Call origin module's receive workflow
             receive_service = Service.fetch_remote_service(
                 resource_instance=origin,
-                service_class=f"{FC}ReceiveService",
+                service_class=IRI(f"{FC}ReceiveService"),
                 payload_model=ReceivePayload,
                 ogm=self.ogm,
+                logger=self.logger_parent.getChild(
+                    f"RemoteService@{origin.fragment}-ReceiveService"
+                ),
             )
 
             response = receive_service(ReceivePayload(box_iri=box_iri))
@@ -424,12 +538,12 @@ class MockWMS:
                 named_graph=named_graph,
             )
 
-            print(f"\n✅ WMS: Box {IRI(box_iri).fragment} accepted and delivered!")
+            self.logger.info(f"Box {IRI(box_iri).fragment} accepted and delivered!")
 
             # Auto-spawn next box
             if self.spawn_after_accept:
                 threading.Thread(
-                    target=self._auto_spawn_box, daemon=True, name="AutoSpawn"
+                    target=self._spawn_random_box, daemon=True, name="AutoSpawn"
                 ).start()
 
             return {"status": "accepted", "box": box_iri}

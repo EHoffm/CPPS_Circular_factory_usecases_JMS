@@ -55,8 +55,8 @@
         sh:path :hasState ;
         sh:minCount 1 ;
         sh:maxCount 1 ;
-        sh:class :BoxState ;
-        sh:message "A Box must have exactly one hasState of type BoxState." ;
+        sh:in ( :Created :InTransit :Delivered ) ;
+        sh:message "A Box must have exactly one hasState, which must be Created, InTransit, or Delivered." ;
     ] .
 
 
@@ -111,19 +111,19 @@
     ] .
 
 
-# ---------------------------------------------------------------
-# Service shape
-# ---------------------------------------------------------------
-:ServiceShape rdf:type sh:NodeShape ;
-    sh:targetClass :Service ;
+# # ---------------------------------------------------------------
+# # Service shape
+# # ---------------------------------------------------------------
+# :ServiceShape rdf:type sh:NodeShape ;
+#     sh:targetClass :Service ;
 
-    # If accessibleAt is present, it must be a single IRI (service may omit it when down)
-    sh:property [
-        sh:path :accessibleAt ;
-        sh:maxCount 1 ;
-        sh:nodeKind sh:IRI ;
-        sh:message "A Service's accessibleAt value, if present, must be a single IRI." ;
-    ] .
+#     # If accessibleAt is present, it must be a single IRI (service may omit it when down)
+#     sh:property [
+#         sh:path :accessibleAt ;
+#         sh:maxCount 1 ;
+#         sh:nodeKind xsd:IRI ;
+#         sh:message "A Service's accessibleAt value, if present, must be a single IRI." ;
+#     ] .
 
 
 #################################################################

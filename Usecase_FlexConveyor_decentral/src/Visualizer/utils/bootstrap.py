@@ -48,6 +48,7 @@ def _create_bidirectional_connections(ogm: OGM, named_graph: IRI) -> None:
     has_connection = IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection")
     connects_to = IRI("http://w3id.org/circularfactory/FlexConveyor#connectsTo")
     has_direction = IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection")
+    on_port = IRI("http://w3id.org/circularfactory/FlexConveyor#onPort")
     base_namespace = "http://w3id.org/circularfactory/FlexConveyorInstances"
 
     print("\n🔄 Creating bidirectional connections...")
@@ -114,6 +115,7 @@ def _create_bidirectional_connections(ogm: OGM, named_graph: IRI) -> None:
             reverse_triples_to_add.append((dst_iri, has_connection, conn_node_iri))
             reverse_triples_to_add.append((conn_node_iri, connects_to, src_iri))
             reverse_triples_to_add.append((conn_node_iri, has_direction, opp_dir_iri))
+            reverse_triples_to_add.append((conn_node_iri, on_port, 0))
 
             print(f"  → Adding: {dst_module} ←→ {src_module} ({opposite_direction})")
 
@@ -296,11 +298,17 @@ def instantiate_modules(
             IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
             IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection"),
         ],
+        [
+            IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
+            IRI("http://w3id.org/circularfactory/FlexConveyor#onPort"),
+        ],
     ]
     class_scope = ClassScope.from_property_chains(property_chains)
 
     named_graph_iri = IRI("http://w3id.org/circularfactory/FlexConveyorInstances")
-    class_iri = IRI("http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule")
+    default_class_iri = IRI(
+        "http://w3id.org/circularfactory/FlexConveyor#FlexConveyorModule"
+    )
     rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
 
     # Clear the named graph before instantiation to avoid stale triples
@@ -316,10 +324,17 @@ def instantiate_modules(
     # fully created — OGM needs the rdf:type triple to determine the class).
     print("📝 Pre-registering module types...")
     type_triples = []
+    class_iris = {}
     for module_data in modules:
-        mid = module_data.get("id")
-        if mid:
-            type_triples.append((IRI(mid), rdf_type, class_iri))
+        module_iri = module_data.get("id")
+        class_iris[module_iri] = IRI(
+            module_data.get(
+                "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type",
+                [default_class_iri],
+            )[0]
+        )
+        if module_iri:
+            type_triples.append((IRI(module_iri), rdf_type, class_iris[module_iri]))
     if type_triples:
         try:
             ogm.db.triples_add(
@@ -357,7 +372,7 @@ def instantiate_modules(
                 # ogm.create(persist=True) would reject ALL triples if any exist.
                 print(f"  → Creating in knowledge graph...")
                 node = ogm.create(
-                    class_iri=class_iri,
+                    class_iri=class_iris[module_iri],
                     class_scope=class_scope,
                     instance_iri=module_iri,
                     data=sanitized_data,
@@ -471,7 +486,9 @@ def instantiate_wms(ogm: OGM, host: str = "localhost") -> dict[str, Any]:
 
         # Define WMS instance IRI and class
         wms_iri = IRI("http://w3id.org/circularfactory/FlexConveyorInstances#WMS")
-        wms_class_iri = IRI("http://w3id.org/circularfactory/FlexConveyor#WarehouseManagementSystem")
+        wms_class_iri = IRI(
+            "http://w3id.org/circularfactory/FlexConveyor#WarehouseManagementSystem"
+        )
         named_graph_iri = IRI("http://w3id.org/circularfactory/FlexConveyorInstances")
         rdf_type = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
 

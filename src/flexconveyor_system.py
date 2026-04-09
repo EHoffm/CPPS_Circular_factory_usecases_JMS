@@ -229,17 +229,18 @@ class FlexConveyorSystem:
             ),
         ]
         try:
-            result = self.db.triples_update(
+            self.db.triples_update(
                 old_triples=triples_to_delete,
                 new_triples=triples_to_insert,
                 check_exist=True,
             )
+            msg = f"Successfully conveyed {self._shorten_iri(parcel_iri)} from {self._shorten_iri(current_module)} to {self._shorten_iri(next_module_iri)}"
+            logging.info(msg)
+            return True, msg
         except Exception as e:
-            logging.error(f"Error during convey operation: {e}")
-            raise e
-
-        logging.info(f"SPARQL Update Result: {result}")
-        return result, log_msg
+            msg = f"Failed to convey {self._shorten_iri(parcel_iri)} from {self._shorten_iri(current_module)} to {self._shorten_iri(next_module_iri)}: {e}"
+            logging.error(msg)
+            return False, msg
 
     def add_parcel(self, destination_iri, start_module_iri):
         parcel_iri = f"https://www.sfb1574.kit.edu/ontologies/FlexConveyor#parcel{self.parcel_counter + 1}"
@@ -280,7 +281,7 @@ class FlexConveyorSystem:
             )
         )
         try:
-            result = self.db.triples_add(
+            self.db.triples_add(
                 triples_to_add=triples_to_insert,
             )
             self.parcel_counter += 1
@@ -312,7 +313,12 @@ class FlexConveyorSystem:
             logging.error(f"Parcel {parcel_iri} not found in database")
             raise ValueError(f"Parcel {parcel_iri} not found in database")
 
-        self.db.triples_delete(triples_to_delete=triples_to_delete)
+        try:
+            self.db.triples_delete(triples_to_delete=triples_to_delete)
+            logging.info(f"Parcel {self._shorten_iri(parcel_iri)} deleted successfully")
+        except Exception as e:
+            logging.error(f"Error during delete_parcel operation: {e}")
+            raise e
 
     def find_path(self, start_module_iri, target_module_iri):
         """
