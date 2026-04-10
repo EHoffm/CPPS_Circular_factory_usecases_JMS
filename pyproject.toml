@@ -33,8 +33,8 @@ python = "^3.12"
 streamlit = "^1.28.0"
 streamlit-autorefresh = "^1.0.1"
 matplotlib = "^3.7.0"
-graph_db_interface = {git = "git@gitlab.kit.edu:kit/ifl/opensource/circular_factory/inf/semantic_middleware_dev/graph_db_interface.git"}
-kapps-ogm = {git = "git@gitlab.kit.edu:kit/ifl/opensource/circular_factory/inf/circular_factory_ogm.git"}
+graph_db_interface = "^2.0.1"
+kapps-ogm = "^0.1.2"
 
 
 [tool.poetry.group.dev.dependencies]
