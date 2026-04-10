@@ -17,7 +17,7 @@ class AnomalyDetector:
         """retrieves Time Series Data of an unscrewing process as a node via OGM.fetch(), processes well known json format, returns Time Serias as
         preferred Data Structure (e.g. list of floats)
         """
-        """
+
         property_chains = [
             [
                 IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
@@ -88,7 +88,9 @@ class AnomalyDetector:
         print("Fetched data for anomaly detection:")
         print(json.dumps(serialized, indent=2))
 
-        return serialized"""
+        return serialized
+
+    """
 
         def fetch_partial(property_chains: list[list[IRI]]) -> dict:
             scope = ClassScope.from_property_chains(property_chains)  # type: ignore
@@ -193,6 +195,7 @@ class AnomalyDetector:
         print("Fetched data for anomaly detection:")
         print(json.dumps(merged, indent=2))
         return merged
+        """
 
     def detect_anomaly(self, data: dict) -> dict:
         """processes fetched data, detects anomalies, returns annotated data structure
