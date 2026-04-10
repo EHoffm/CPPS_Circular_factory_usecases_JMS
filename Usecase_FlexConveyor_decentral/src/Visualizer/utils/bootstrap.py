@@ -488,7 +488,7 @@ def instantiate_wms(
 
     try:
         # Import MockWMS class
-        wms_module = importlib.import_module("mock_wms.mock_wms")
+        wms_module = importlib.import_module("mock_wms.MockWMS")
         wms_module = importlib.reload(wms_module)
         MockWMS = wms_module.MockWMS
 

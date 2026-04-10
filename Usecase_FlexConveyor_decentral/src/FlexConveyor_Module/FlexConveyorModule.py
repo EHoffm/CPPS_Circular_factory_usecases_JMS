@@ -973,7 +973,7 @@ class FlexConveyor:
         Returns:
             Result dictionary from WMS's accept_box workflow
         """
-        from mock_wms.mock_wms import AcceptBoxPayload
+        from mock_wms.MockWMS import AcceptBoxPayload
 
         FC = "http://w3id.org/circularfactory/FlexConveyor#"
         INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
