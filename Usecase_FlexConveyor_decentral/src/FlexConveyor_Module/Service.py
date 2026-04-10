@@ -1,5 +1,5 @@
 from typing import Optional, Any, Dict
-import aas_middleware as aas
+import semantic_middleware as smw
 from graph_db_interface import IRI
 from pydantic import BaseModel
 import requests
@@ -18,7 +18,7 @@ class Service:
     _service_url: str = None
     name: str = None
     _service_instance: IRI = None
-    _middleware: aas.Middleware = None
+    _middleware: smw.Middleware = None
     _is_remote: bool = False
 
     def __init__(
@@ -98,7 +98,7 @@ class Service:
         service._is_remote = True
         return service
 
-    def register_in_middleware(self, mw: aas.Middleware):
+    def register_in_middleware(self, mw: smw.Middleware):
         if self._is_remote:
             raise ValueError("Remote services cannot be registered in middleware.")
 

@@ -21,7 +21,7 @@ def _bootstrap_import_paths() -> None:
         "kapps_ogm",
         "circular_factory_ogm",
         "graph_db_interface",
-        "aas_middleware_inf",
+        "semantic_middleware",
         "datamodel_connector",
     )
 

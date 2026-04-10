@@ -13,7 +13,7 @@ from typing import Any, List, Optional
 from graph_db_interface.utils.iri import IRI
 from kapps_ogm import OGM
 from kapps_ogm import ClassScope
-import aas_middleware as aas
+import semantic_middleware as smw
 
 
 _running_modules: list[Any] = []

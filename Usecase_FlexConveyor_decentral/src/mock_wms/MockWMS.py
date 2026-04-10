@@ -12,7 +12,7 @@ import time
 from typing import Optional, Dict, Any, List
 import random
 import uvicorn
-import aas_middleware as aas
+import semantic_middleware as smw
 from graph_db_interface.utils.iri import IRI
 from pydantic import BaseModel
 
@@ -65,7 +65,7 @@ class MockWMS:
 
         self.wms_id = IRI("http://w3id.org/circularfactory/FlexConveyorInstances#WMS")
         self.ogm = ogm
-        self.mw = aas.Middleware()
+        self.mw = smw.Middleware()
         self.host = host
         self.port = self._get_next_port()
         self.url: Optional[str] = None
@@ -84,7 +84,7 @@ class MockWMS:
         self.logger = self.logger_parent.getChild("SubProjectLogic")
 
         # Setup middleware data model (minimal, just for service registration)
-        data_model = aas.DataModel()
+        data_model = smw.DataModel()
         self.mw.load_data_model(
             name=str(self.wms_id),
             data_model=data_model,

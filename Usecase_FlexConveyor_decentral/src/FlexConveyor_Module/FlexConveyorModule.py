@@ -6,12 +6,12 @@ from collections import deque
 from typing import Optional, Any, Dict
 import requests
 import uvicorn
-import aas_middleware as aas
+import semantic_middleware as smw
 from graph_db_interface.utils.iri import IRI
 from pydantic import BaseModel
 
 from kapps_ogm import OGM, ClassScope
-from aas_middleware.model.util import (
+from semantic_middleware.model.util import (
     convert_camel_case_to_underscrore_str,
     get_id_with_patch,
 )
@@ -73,7 +73,7 @@ class FlexConveyor:
         self.module_id = module_id
         self.ogm = ogm
         self.concurrent_guard_override = concurrent_guard_override
-        self.mw = aas.Middleware()
+        self.mw = smw.Middleware()
         self.host = host
         self.port = self._get_next_port()
         self.url: Optional[str] = None  # Will be set when server starts
@@ -120,12 +120,12 @@ class FlexConveyor:
         )
 
         # OGM-generated dynamic Pydantic models can have field annotations
-        # that are incompatible with aas_middleware's schema introspection
+        # that are incompatible with semantic_middleware's schema introspection
         # (issubclass checks). Fall back to manual DataModel population.
         try:
             self.mw.load_data_model(
                 name=str(self.module_id),
-                data_model=aas.DataModel.from_models(data_node.instance),
+                data_model=smw.DataModel.from_models(data_node.instance),
                 persist_instances=True,
             )
         except TypeError as e:
@@ -133,7 +133,7 @@ class FlexConveyor:
                 self.logger.warning(
                     f"Schema introspection failed, using simplified fallback"
                 )
-                data_model = aas.DataModel()
+                data_model = smw.DataModel()
                 model_id = get_id_with_patch(data_node.instance)
                 data_model._key_ids_models[model_id] = data_node.instance
                 type_name = type(data_node.instance).__name__.split(".")[-1]

@@ -26,15 +26,16 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-packages = [{include = "jms_usecase_2"}]
+packages = [{include = "Usecase_FlexConveyor_decentral"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
 streamlit = "^1.28.0"
 streamlit-autorefresh = "^1.0.1"
 matplotlib = "^3.7.0"
-graph_db_interface = {git = "git@gitlab.kit.edu:kit/ifl/opensource/circular_factory/inf/semantic_middleware_dev/graph_db_interface.git"}
-kapps-ogm = {git = "git@gitlab.kit.edu:kit/ifl/opensource/circular_factory/inf/circular_factory_ogm.git"}
+graph_db_interface = "^2.0.1"
+kapps-ogm = "^0.1.2"
+semantic-middleware = "^0.2.6"
 
 
 [tool.poetry.group.dev.dependencies]
