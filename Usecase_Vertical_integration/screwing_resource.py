@@ -200,6 +200,11 @@ class ScrewingResource:
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasRobotPositionTimeSeriesData"
                 )
             ],
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
+                )
+            ],
         ]
         unscrewing_operation_scope = ClassScope.from_property_chains(property_chains)
         data = {
@@ -235,7 +240,9 @@ class ScrewingResource:
             ],
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
-            ): [""],
+            ): [
+                "unknown"
+            ],  # Placeholder, to be updated by anomaly detector after analysis
         }
 
         # TODO: hier bitte instance_iri anpassen, wenn nicht mehr fest eine instanz in der demo genutzt wird
