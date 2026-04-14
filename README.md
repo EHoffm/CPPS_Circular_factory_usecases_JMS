@@ -27,6 +27,8 @@ poetry install
 poetry shell
 ```
 
+To install on Windows [Install on Windows](install_windows.md)
+
 ### Using pip
 
 ```bash
