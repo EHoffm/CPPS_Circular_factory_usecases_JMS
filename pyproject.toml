@@ -19,23 +19,20 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 packages = [{include = "Usecase_FlexConveyor_decentral"}]
 
 [tool.poetry.dependencies]
-python = "^3.12"
-streamlit = "^1.28.0"
+python = "^3.13"
+streamlit = "^1.56.0"
 streamlit-autorefresh = "^1.0.1"
-matplotlib = "^3.7.0"
-graph_db_interface = "^2.0.1"
-kapps-ogm = "^0.1.2"
-semantic-middleware = "^0.2.6"
+matplotlib = "^3.10.8"
+graph_db_interface = { git = "https://github.com/SAWeindel/graph_db_interface.git", rev = "dd2b39baa60cb43c11338d196d998404a555707a" }
+kapps-ogm = { git = "https://github.com/SAWeindel/kapps_ogm.git", rev = "0a3b8c5b40c7b3b61377d6e47ea6db1d3770ed1a" }
+semantic-middleware = "0.2.6"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -51,7 +48,7 @@ flexconveyor-interface = "jms_usecase_2.src.streamlit_interface:main"
 
 [tool.black]
 line-length = 88
-target-version = ['py39']
+target-version = ['py313']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -68,7 +65,7 @@ extend-exclude = '''
 '''
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
