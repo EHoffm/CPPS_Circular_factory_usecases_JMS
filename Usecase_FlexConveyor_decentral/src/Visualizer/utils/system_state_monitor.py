@@ -2,7 +2,12 @@
 
 from typing import Any
 
+<<<<<<< Updated upstream
 from kapps_ogm import OGM, ClassScope
+=======
+from kapps_ogm.ogm import OGM
+from kapps_ogm.utils.class_scope import ClassScope
+>>>>>>> Stashed changes
 from graph_db_interface import IRI, GraphDB
 
 

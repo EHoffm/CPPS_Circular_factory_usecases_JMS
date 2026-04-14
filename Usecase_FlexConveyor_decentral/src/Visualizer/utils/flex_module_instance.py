@@ -12,7 +12,12 @@ from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
 from graph_db_interface.utils.iri import IRI
+<<<<<<< Updated upstream
 from kapps_ogm import OGM, ClassScope
+=======
+from kapps_ogm.utils.class_scope import ClassScope
+from kapps_ogm.ogm import OGM
+>>>>>>> Stashed changes
 
 from .bootstrap import instantiate_modules, instantiate_wms
 

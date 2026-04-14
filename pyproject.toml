@@ -29,7 +29,12 @@ classifiers = [
 packages = [{include = "jms_usecase_2"}]
 
 [tool.poetry.dependencies]
+<<<<<<< Updated upstream
 python = "^3.12"
+=======
+python = ">=3.13,<3.14"
+graph-db-interface = "*"
+>>>>>>> Stashed changes
 streamlit = "^1.28.0"
 streamlit-autorefresh = "^1.0.1"
 matplotlib = "^3.7.0"

@@ -11,8 +11,13 @@ import threading
 from typing import Any, List, Optional
 
 from graph_db_interface.utils.iri import IRI
+<<<<<<< Updated upstream
 from kapps_ogm import OGM
 from kapps_ogm import ClassScope
+=======
+from kapps_ogm.ogm import OGM
+from kapps_ogm.utils.class_scope import ClassScope
+>>>>>>> Stashed changes
 import aas_middleware as aas
 
 
