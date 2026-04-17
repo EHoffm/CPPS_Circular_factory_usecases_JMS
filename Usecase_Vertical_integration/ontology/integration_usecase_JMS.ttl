@@ -27,6 +27,16 @@
     rdfs:label "Time Series Data"@en ;
     rdfs:comment "A collection of data points indexed in time order, typically consisting of sequences of measurements taken at successive times."@en .
 
+:Anglegrinder a owl:Class ;
+    rdfs:subClassOf :Product ;
+    rdfs:label "Angle Grinder"@en ;
+    rdfs:comment "A power tool used for cutting, grinding, and polishing materials."@en .
+
+:Product a owl:Class ;
+    rdfs:label "Product"@en ;
+    rdfs:comment "A product is an item that is manufactured or refined for sale."@en .
+
+
 #################################################################
 # Object Properties
 #################################################################
@@ -101,3 +111,27 @@
     rdfs:range xsd:decimal ;
     rdfs:label "Position on approach"@en ;
     rdfs:comment "The position along the screw axis when approaching the screw."@en .
+
+:hasProducer a owl:DatatypeProperty ;
+    rdfs:domain :Anglegrinder ;
+    rdfs:range xsd:string ;
+    rdfs:label "has producer"@en ;
+    rdfs:comment "Indicates the manufacturer or producer of the angle grinder."@en .
+
+:hasProductionDate a owl:DatatypeProperty ;
+    rdfs:domain :Anglegrinder ;
+    rdfs:range xsd:date ;
+    rdfs:label "has production date"@en ;
+    rdfs:comment "Indicates the date when the angle grinder was produced."@en .
+
+:hasCondition a owl:DatatypeProperty ;
+    rdfs:domain :Anglegrinder ;
+    rdfs:range xsd:string ;
+    rdfs:label "has condition"@en ;
+    rdfs:comment "Indicates the current condition of the angle grinder (e.g., new, used, refurbished)."@en .
+
+:hasProductnumber a owl:DatatypeProperty ;
+    rdfs:domain :Product ;
+    rdfs:range xsd:string ;
+    rdfs:label "has product number"@en ;
+    rdfs:comment "Indicates the specific product number or model identifier for the angle grinder."@en .
