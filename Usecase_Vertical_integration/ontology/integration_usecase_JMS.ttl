@@ -33,7 +33,7 @@
     rdfs:comment "A screwing resource is a resource used in the screwing or unscrewing process, such as a screwdriver or an angle grinder."@en .
 
 :Anglegrinder a owl:Class ;
-    rdfs:subClassOf :ScrewingResource ;
+    rdfs:subClassOf :Product ;
     rdfs:label "Angle Grinder"@en ;
     rdfs:comment "A power tool used for cutting, grinding, and polishing materials."@en .
 
@@ -75,15 +75,15 @@
     rdfs:label "has position time series data"@en ;
     rdfs:comment "Links to the time series data of robot TCO position along screw axis recorded during the unscrewing process."@en .
 
-:hasPossession rdf:type owl:ObjectProperty ;
+:hasPossessionScrewingResource rdf:type owl:ObjectProperty ;
     rdfs:domain :Transformercell ;
     rdfs:range :ScrewingResource ;
-    owl:inverseOf :isPossessedBy .
+    owl:inverseOf :ScrewingResourceIsPossessedBy .
 
-:isPossessedBy rdf:type owl:ObjectProperty ;
+:ScrewingResourceIsPossessedBy rdf:type owl:ObjectProperty ;
     rdfs:domain :ScrewingResource ;
     rdfs:range :Transformercell ;
-    owl:inverseOf :hasPossession .
+    owl:inverseOf :hasPossessionScrewingResource .
 
 :hasPartScrew a owl:ObjectProperty ;
     rdfs:domain :Anglegrinder ;
