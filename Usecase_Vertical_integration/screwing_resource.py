@@ -114,7 +114,7 @@ class ScrewingResource:
         axial_force_time_series = pdData["AxialForce"].to_list()
         robot_position_time_series = pdData["RobotPosition"].to_list()
 
-        # Create the new TimeSeriesData instances and persist it to the knowledge graph
+        # Create the 3 new TimeSeriesData instances and persist it to the knowledge graph
         time_series_scope = ClassScope.from_property_chains(
             [
                 [
@@ -185,6 +185,7 @@ class ScrewingResource:
         # Data for the unscrewing operation instance, linking to the screw type and the time series data
         property_chains = [
             [IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew")],
+            [IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasResource")],
             [
                 IRI(
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
@@ -210,6 +211,13 @@ class ScrewingResource:
         data = {
             IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"): [
                 {"id": screw_type}
+            ],
+            IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasResource"): [
+                {
+                    "id": IRI(
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#ScrewingResource_1"
+                    )
+                }
             ],
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"

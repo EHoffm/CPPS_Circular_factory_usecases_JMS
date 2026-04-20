@@ -91,6 +91,20 @@
     rdfs:range :Transformercell ;
     owl:inverseOf :hasScrewingResource .
 
+:hasPossession a owl:ObjectProperty ;
+    rdfs:domain :Transformercell ;
+    rdfs:range :Anglegrinder ;
+    rdfs:label "has possession"@en ;
+    rdfs:comment "Indicates that the angle grinder is currently in possession of the transformer cell."@en ;
+    owl:inverseOf :isPossessionBy .
+
+:isPossessionBy a owl:ObjectProperty ;
+    rdfs:domain :Anglegrinder ;
+    rdfs:range :Transformercell ;
+    rdfs:label "is possession by"@en ;
+    rdfs:comment "Indicates that the angle grinder is currently in possession of the transformer cell."@en ;
+    owl:inverseOf :hasPossession .
+
 :hasPartScrew a owl:ObjectProperty ;
     rdfs:domain :Anglegrinder ;
     rdfs:range :screw ;

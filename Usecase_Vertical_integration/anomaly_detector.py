@@ -43,6 +43,7 @@ class AnomalyDetector:
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
                 ),
             ],
+            [IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasResource")],
             [
                 IRI(
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
@@ -158,7 +159,7 @@ class AnomalyDetector:
 
         return data
 
-    def update_instance(
+    def updateUnscrewingOperationviaProfiNet(
         self,
         instance_iri: IRI,
         data: dict,

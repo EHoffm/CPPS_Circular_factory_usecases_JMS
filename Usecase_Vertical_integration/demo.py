@@ -5,6 +5,7 @@ import json
 
 from dotenv import load_dotenv
 from screwing_resource import ScrewingResource
+from transformercell_resource import TransformercellResource
 from anomaly_detector import AnomalyDetector
 from learner import Learner
 
@@ -13,6 +14,7 @@ def main():
     credentials = GraphDBCredentials.from_env()
     ogm = OGM(db=GraphDB(credentials=credentials), loader=None)
     screwing_resource = ScrewingResource()
+    transformercell_resource = TransformercellResource()
     anomaly_detector = AnomalyDetector(threshold=0.1)
     learner = Learner()
 
@@ -29,7 +31,19 @@ def main():
         print(f"  ⚠️  Could not clear graph: {clear_err} (continuing anyway)")
 
     # Example usage:
-    # TODO: noch den screw_type als instanz erzeugen, wenn noch nicht drin. aus learner?
+    # create the Transformercell instance Transformercell_A with an Anglegrinder and a ScrewingResource
+    transformercell_resource.create_transformercell_instance(
+        instance_iri=IRI(
+            "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#Transformercell_A"
+        ),
+        angle_grinder_iri=IRI(
+            "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#Anglegrinder_099"
+        ),
+        screwing_resource_iri=IRI(
+            "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#ScrewingResource_1"
+        ),
+        named_graph_iri=named_graph_iri,
+    )
     process_instance_iri = IRI(
         "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation1"
     )
@@ -42,10 +56,8 @@ def main():
 
     fetched_data = anomaly_detector.fetch_process_model(process_instance_iri)
 
-    annotated_data = anomaly_detector.detect_anomaly(
-        fetched_data
-    )  # TODO: ab einschließlich dieser Zeile noch zu debuggen und schauen, ob fetched_data das richtige Format liefert
-    anomaly_detector.update_instance(
+    annotated_data = anomaly_detector.detect_anomaly(fetched_data)
+    anomaly_detector.updateUnscrewingOperationviaProfiNet(
         instance_iri=process_instance_iri, data=annotated_data
     )  # TODO: prüfen ob Problem, wenn named_graph_iri nicht mitgegeben
     # late at night, the learner awakes. he picks one specific screw type and learns from all process descriptions
