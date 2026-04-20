@@ -96,7 +96,8 @@ class AnomalyDetector:
         """
         # TODO MG: Hier implementieren wir die Anomalieerkennung Logik
         # Parameters for the anomaly detection, to check features of the time series data - learned in learner.py
-
+        # Detectable failure modes include missing screws, occluded or rounded screw heads, loose anchors,
+        # and stuck screws;
         hasScrew_iri_lined = IRI(
             "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"
         ).lined

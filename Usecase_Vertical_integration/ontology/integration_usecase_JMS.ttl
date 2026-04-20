@@ -57,6 +57,12 @@
     rdfs:label "has screw"@en ;
     rdfs:comment "Links the unscrewing operation to the specific screw being removed."@en .
 
+:hasResource a owl:ObjectProperty ;
+    rdfs:domain :unscrewingOperation ;
+    rdfs:range :ScrewingResource ;
+    rdfs:label "has resource"@en ;
+    rdfs:comment "Links the unscrewing operation to the specific resource (e.g., screwdriver) used in the process."@en .
+
 :hasUnscrewingTorqueTimeSeriesData a owl:ObjectProperty ;
     rdfs:domain :unscrewingOperation ;
     rdfs:range :TimeSeriesData ;
@@ -75,15 +81,15 @@
     rdfs:label "has position time series data"@en ;
     rdfs:comment "Links to the time series data of robot TCO position along screw axis recorded during the unscrewing process."@en .
 
-:hasPossessionScrewingResource rdf:type owl:ObjectProperty ;
+:hasScrewingResource rdf:type owl:ObjectProperty ;
     rdfs:domain :Transformercell ;
     rdfs:range :ScrewingResource ;
-    owl:inverseOf :ScrewingResourceIsPossessedBy .
+    owl:inverseOf :isScrewingResourceOf .
 
-:ScrewingResourceIsPossessedBy rdf:type owl:ObjectProperty ;
+:isScrewingResourceOf rdf:type owl:ObjectProperty ;
     rdfs:domain :ScrewingResource ;
     rdfs:range :Transformercell ;
-    owl:inverseOf :hasPossessionScrewingResource .
+    owl:inverseOf :hasScrewingResource .
 
 :hasPartScrew a owl:ObjectProperty ;
     rdfs:domain :Anglegrinder ;
