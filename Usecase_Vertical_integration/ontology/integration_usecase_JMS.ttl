@@ -27,14 +27,24 @@
     rdfs:label "Time Series Data"@en ;
     rdfs:comment "A collection of data points indexed in time order, typically consisting of sequences of measurements taken at successive times."@en .
 
+:ScrewingResource a owl:Class ;
+    rdfs:subClassOf :Resource ;
+    rdfs:label "Screwing Resource"@en ;
+    rdfs:comment "A screwing resource is a resource used in the screwing or unscrewing process, such as a screwdriver or an angle grinder."@en .
+
 :Anglegrinder a owl:Class ;
-    rdfs:subClassOf :Product ;
+    rdfs:subClassOf :ScrewingResource ;
     rdfs:label "Angle Grinder"@en ;
     rdfs:comment "A power tool used for cutting, grinding, and polishing materials."@en .
 
 :Product a owl:Class ;
     rdfs:label "Product"@en ;
     rdfs:comment "A product is an item that is manufactured or refined for sale."@en .
+
+:Transformercell a owl:Class ;
+    rdfs:subClassOf :Resource ;
+    rdfs:label "Transformer Cell"@en ;
+    rdfs:comment "A transformer cell is a cell to work on a product"@en .
 
 
 #################################################################
@@ -64,6 +74,30 @@
     rdfs:range :TimeSeriesData ;
     rdfs:label "has position time series data"@en ;
     rdfs:comment "Links to the time series data of robot TCO position along screw axis recorded during the unscrewing process."@en .
+
+:hasPossession rdf:type owl:ObjectProperty ;
+    rdfs:domain :Transformercell ;
+    rdfs:range :ScrewingResource ;
+    owl:inverseOf :isPossessedBy .
+
+:isPossessedBy rdf:type owl:ObjectProperty ;
+    rdfs:domain :ScrewingResource ;
+    rdfs:range :Transformercell ;
+    owl:inverseOf :hasPossession .
+
+:hasPartScrew a owl:ObjectProperty ;
+    rdfs:domain :Anglegrinder ;
+    rdfs:range :screw ;
+    rdfs:label "has part screw"@en ;
+    rdfs:comment "Links the angle grinder to the specific screw that is part of the product being worked on."@en ;
+    owl:inverseOf :isPartScrewOf .
+
+:isPartScrewOf a owl:ObjectProperty ;
+    rdfs:domain :screw ;
+    rdfs:range :Anglegrinder ;
+    rdfs:label "is part of"@en ;
+    rdfs:comment "Indicates that the screw is a component of the angle grinder."@en ;
+    owl:inverseOf :hasPartScrew .
 
 #################################################################
 # Datatype Properties
