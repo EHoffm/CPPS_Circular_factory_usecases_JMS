@@ -18,6 +18,7 @@ class TransformercellResource:
         instance_iri: IRI,
         angle_grinder_iri: IRI,
         screwing_resource_iri: IRI,
+        screw_iri: IRI,
         named_graph_iri: IRI,
     ):
         # Create the angle grinder and screwing resource instances if they don't exist yet
@@ -25,8 +26,22 @@ class TransformercellResource:
             self.ogm.create(
                 instance_iri=angle_grinder_iri,
                 class_iri=IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#AngleGrinder"
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#Anglegrinder"
                 ),
+                class_scope=ClassScope.from_property_chains(
+                    [
+                        [
+                            IRI(
+                                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPartScrew"
+                            )
+                        ]
+                    ]
+                ),
+                data={
+                    IRI(
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPartScrew"
+                    ): [{"id": screw_iri}]
+                },
                 persist=True,
                 named_graph=named_graph_iri,
             )
@@ -40,6 +55,20 @@ class TransformercellResource:
                 class_iri=IRI(
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#ScrewingResource"
                 ),
+                class_scope=ClassScope.from_property_chains(
+                    [
+                        [
+                            IRI(
+                                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#isScrewingResourceOf"
+                            )
+                        ]
+                    ]
+                ),
+                data={
+                    IRI(
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrewingResource"
+                    ): []
+                },
                 persist=True,
                 named_graph=named_graph_iri,
             )
@@ -54,14 +83,12 @@ class TransformercellResource:
                     IRI(
                         "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrewingResource"
                     )
-                ]
-            ],
-            [
+                ],
                 [
                     IRI(
                         "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPossession"
                     )
-                ]
+                ],
             ],
         )
 
