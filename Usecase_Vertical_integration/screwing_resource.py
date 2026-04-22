@@ -16,6 +16,7 @@ class ScrewingResource:
     def write_time_series_data_to_knowledge_graph(
         self,
         screw_type: IRI,
+        csv_file_name: str,
         instance_iri: IRI = IRI(
             "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperationDefaultInstance"
         ),
@@ -23,6 +24,10 @@ class ScrewingResource:
         named_graph_iri = IRI(
             "http://w3id.org/circularfactory/UsecaseVerticalIntegrationInstances"
         )
+        suffix = instance_iri.split("#")[
+            -1
+        ]  # Extract suffix from instance IRI for unique naming
+
         # Hinweis die values success und missing_screw werden hier aktuell nicht genutzt
         screw_types = {
             IRI(
@@ -115,7 +120,7 @@ class ScrewingResource:
         # data: {hasScrew: screw_type,
         #    hasunscrewingTorqueTimeSeriesData: [...],
         #    hasAxialForceTimeSeriesData: [...]}
-        pdData = pd.read_csv(f"unscrewing_timeseries/{screw_types[screw_type]}.csv")
+        pdData = pd.read_csv(f"unscrewing_timeseries/{csv_file_name}.csv")
         unscrewing_torque_time_series = pdData[
             "UnscrewingTorque"
         ].to_list()  # TODO: das hier muss noch als daten in TimeSeriesData Instanz
@@ -135,10 +140,11 @@ class ScrewingResource:
         time_series_iri = IRI(
             "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#TimeSeriesData"
         )
+        newUnscrewingTorqueTimeSeriesDataInstanceIRI = IRI(
+            f"https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#{suffix}_UnscrewingTorqueTimeSeriesDataInstance"
+        )
         timeSeriesInstanceTorque = self.ogm.create(
-            instance_iri=IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingTorqueTimeSeriesDataInstance1"
-            ),
+            instance_iri=newUnscrewingTorqueTimeSeriesDataInstanceIRI,
             class_iri=time_series_iri,
             class_scope=time_series_scope,
             data={
@@ -150,10 +156,11 @@ class ScrewingResource:
             named_graph=named_graph_iri,
         )
 
+        newAxialForceTimeSeriesDataInstanceIRI = IRI(
+            f"https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#{suffix}_AxialForceTimeSeriesDataInstance"
+        )
         timeSeriesInstanceAxialForce = self.ogm.create(
-            instance_iri=IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#AxialForceTimeSeriesDataInstance1"
-            ),
+            instance_iri=newAxialForceTimeSeriesDataInstanceIRI,
             class_iri=time_series_iri,
             class_scope=time_series_scope,
             data={
@@ -165,10 +172,11 @@ class ScrewingResource:
             named_graph=named_graph_iri,
         )
 
+        newRobotPositionTimeSeriesDataInstanceIRI = IRI(
+            f"https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#{suffix}_RobotPositionTimeSeriesDataInstance"
+        )
         timeSeriesInstancePosition = self.ogm.create(
-            instance_iri=IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#RobotPositionTimeSeriesDataInstance1"
-            ),
+            instance_iri=newRobotPositionTimeSeriesDataInstanceIRI,
             class_iri=time_series_iri,
             class_scope=time_series_scope,
             data={
@@ -178,12 +186,6 @@ class ScrewingResource:
             },
             persist=True,
             named_graph=named_graph_iri,
-        )
-        fetched_instance = self.ogm.fetch(
-            class_scope=time_series_scope,
-            instance_iri=IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#RobotPositionTimeSeriesDataInstance1"
-            ),
         )
 
         # Data for the unscrewing operation instance, linking to the screw type and the time series data
@@ -212,6 +214,10 @@ class ScrewingResource:
             ],
         ]
         unscrewing_operation_scope = ClassScope.from_property_chains(property_chains)
+        if suffix == "unscrewingOperation2":
+            status = "Successful"
+        else:
+            status = "unknown"  # Placeholder, to be updated by anomaly detector after analysis
         data = {
             IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"): [
                 {"id": screw_type}
@@ -225,35 +231,17 @@ class ScrewingResource:
             ],
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
-            ): [
-                {
-                    "id": IRI(
-                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingTorqueTimeSeriesDataInstance1"
-                    )
-                }
-            ],
+            ): [{"id": newUnscrewingTorqueTimeSeriesDataInstanceIRI}],
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData"
-            ): [
-                {
-                    "id": IRI(
-                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#AxialForceTimeSeriesDataInstance1"
-                    )
-                }
-            ],
+            ): [{"id": newAxialForceTimeSeriesDataInstanceIRI}],
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasRobotPositionTimeSeriesData"
-            ): [
-                {
-                    "id": IRI(
-                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#RobotPositionTimeSeriesDataInstance1"
-                    )
-                }
-            ],
+            ): [{"id": newRobotPositionTimeSeriesDataInstanceIRI}],
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
             ): [
-                "unknown"
+                status
             ],  # Placeholder, to be updated by anomaly detector after analysis
         }
 

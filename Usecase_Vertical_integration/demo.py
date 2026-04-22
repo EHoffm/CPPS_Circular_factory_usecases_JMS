@@ -48,9 +48,6 @@ def main():
         screw_iri=screw_type,
         named_graph_iri=named_graph_iri,
     )
-    process_instance_iri = IRI(
-        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation1"
-    )
 
     # this part until the second print is just for demonstrating, that the screw type can be fetched via the Anglegrinder instance
     fetched_instance = transformercell_resource.ogm.fetch(
@@ -80,9 +77,14 @@ def main():
     print("Fetched Transformercell:")
     print(json.dumps(serialized, indent=2))
 
+    process_instance_iri = IRI(
+        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation1"
+    )
+
     # here the screw_type from the fetch can be used, but since we already have it, we can directly use the screw_type IRI
     screwing_resource.write_time_series_data_to_knowledge_graph(
         screw_type,
+        csv_file_name="missing_screw",
         instance_iri=process_instance_iri,
     )
 
@@ -93,6 +95,14 @@ def main():
     annotated_data = anomaly_detector.detect_anomaly(fetched_data)
     anomaly_detector.updateUnscrewingOperationviaProfiNet(
         instance_iri=process_instance_iri, data=annotated_data
+    )
+    # add second unscrewing operation instance for the learning example
+    screwing_resource.write_time_series_data_to_knowledge_graph(
+        screw_type=screw_type,
+        csv_file_name="success",
+        instance_iri=IRI(
+            "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation2"
+        ),
     )
     # late at night, the learner awakes. he picks one specific screw type and learns from all process descriptions
     learner.get_all_process_descriptions()
