@@ -118,9 +118,9 @@ class AnomalyDetector:
         ][
             0
         ]  # double; minimum axial force that indicates the screw moving towards the screwdriver
-        # hasAxialForceApproach = data[
-        #    f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach').lined}"
-        # ]  # double; The axial force measured while the screwdriver approaches the screw head.
+        hasAxialForceApproach = data[
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach').lined}"
+        ]  # double; The axial force measured while the screwdriver approaches the screw head.
         hasPositionOnApproach = data[f"{hasScrew_iri_lined}"][0][
             f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach').lined}"
         ][
@@ -130,6 +130,7 @@ class AnomalyDetector:
         print(f"upper dynamic losening torque: {hasUpperDynamicLoseningTorque}")
         print(f"lower axial force: {hasLowerAxialForce}")
         print(f"position on approach: {hasPositionOnApproach}")
+        print(f"axial force approach: {hasAxialForceApproach}")
 
         # TODO: entweder Vergleichswerte der Schraube oder success_process Daten anpassen
         # für den moment hier die Vergleichswerte der Schraube nur für diese Funktion angepasst

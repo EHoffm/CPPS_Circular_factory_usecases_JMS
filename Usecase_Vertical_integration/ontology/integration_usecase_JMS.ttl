@@ -7,7 +7,7 @@
 #################################################################
 # Ontology
 #################################################################
-: rdf:type owl:Ontology .
+: rdf:type owl:Ontology .unscrewingOperation
 
 
 #################################################################
@@ -53,15 +53,29 @@
 
 :hasScrew a owl:ObjectProperty ;
     rdfs:domain :unscrewingOperation ;
-    rdfs:range :screw ;
+    rdfs:range :screw;
     rdfs:label "has screw"@en ;
     rdfs:comment "Links the unscrewing operation to the specific screw being removed."@en .
+
+:hasOperation a owl:ObjectProperty ;
+    rdfs:domain :screw ;
+    rdfs:range :unscrewingOperation ;
+    rdfs:label "has operation"@en ;
+    rdfs:comment "Links the screw to the unscrewing operation performed on it."@en ;
+    owl:inverseOf :hasScrew .
 
 :hasResource a owl:ObjectProperty ;
     rdfs:domain :unscrewingOperation ;
     rdfs:range :ScrewingResource ;
     rdfs:label "has resource"@en ;
     rdfs:comment "Links the unscrewing operation to the specific resource (e.g., screwdriver) used in the process."@en .
+
+:hasOperations a owl:ObjectProperty ;
+    rdfs:domain :ScrewingResource ;
+    rdfs:range :unscrewingOperation ;
+    rdfs:label "has operations"@en ;
+    rdfs:comment "Links the transformer cell to the unscrewing operations performed on it."@en ;
+    owl:inverseOf :hasResource .
 
 :hasUnscrewingTorqueTimeSeriesData a owl:ObjectProperty ;
     rdfs:domain :unscrewingOperation ;
@@ -152,7 +166,6 @@
     rdfs:range xsd:decimal ;
     rdfs:label "has lower axial force"@en ;
     rdfs:comment "minimum axial force that indicates the screw moving towards the screwdriver"@en .
-
 
 :hasAxialForceApproach a owl:DatatypeProperty ;
     rdfs:domain :screw ;
