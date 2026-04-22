@@ -55,15 +55,29 @@ def main():
     # this part until the second print is just for demonstrating, that the screw type can be fetched via the Anglegrinder instance
     fetched_instance = transformercell_resource.ogm.fetch(
         class_scope=ClassScope.from_property_chains(
-            [[IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPartScrew")]]
+            [
+                [
+                    IRI(
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPossession"
+                    ),
+                    IRI(
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPartScrew"
+                    ),
+                ],
+                [
+                    IRI(
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrewingResource"
+                    )
+                ],
+            ]
         ),
         instance_iri=IRI(
-            "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#Anglegrinder_099"
+            "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#Transformercell_A"
         ),
     )
     pydantic_model = fetched_instance.materialize()  # TEST
     serialized = pydantic_model.model_dump()
-    print("Fetched screw type:")
+    print("Fetched Transformercell:")
     print(json.dumps(serialized, indent=2))
 
     # here the screw_type from the fetch can be used, but since we already have it, we can directly use the screw_type IRI
@@ -77,10 +91,9 @@ def main():
     )  # fetches UnscrewingOperation instance
 
     annotated_data = anomaly_detector.detect_anomaly(fetched_data)
-    # when annotated_data = successful, then update UnscrewingOperation instance and set the hasPartScrew of the angle grinder to none
     anomaly_detector.updateUnscrewingOperationviaProfiNet(
         instance_iri=process_instance_iri, data=annotated_data
-    )  # TODO: prüfen ob Problem, wenn named_graph_iri nicht mitgegeben
+    )
     # late at night, the learner awakes. he picks one specific screw type and learns from all process descriptions
     learner.get_all_process_descriptions()
     learner.learn_from_process_descriptions()

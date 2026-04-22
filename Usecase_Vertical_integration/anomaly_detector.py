@@ -43,6 +43,12 @@ class AnomalyDetector:
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
                 ),
             ],
+            [
+                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach"
+                ),
+            ],
             [IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasResource")],
             [
                 IRI(
@@ -50,11 +56,6 @@ class AnomalyDetector:
                 ),
                 IRI(
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
-                ),
-            ],
-            [
-                IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
                 ),
             ],
             [
@@ -71,6 +72,11 @@ class AnomalyDetector:
                 ),
                 IRI(
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+                ),
+            ],
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
                 ),
             ],
         ]
@@ -118,8 +124,10 @@ class AnomalyDetector:
         ][
             0
         ]  # double; minimum axial force that indicates the screw moving towards the screwdriver
-        hasAxialForceApproach = data[
+        hasAxialForceApproach = data[f"{hasScrew_iri_lined}"][0][
             f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach').lined}"
+        ][
+            0
         ]  # double; The axial force measured while the screwdriver approaches the screw head.
         hasPositionOnApproach = data[f"{hasScrew_iri_lined}"][0][
             f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach').lined}"
@@ -156,7 +164,7 @@ class AnomalyDetector:
             0
         ]
         approach_position_time_series_string = data[
-            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach').lined}"
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasRobotPositionTimeSeriesData').lined}"
         ][0][
             f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData').lined}"
         ][
@@ -166,6 +174,10 @@ class AnomalyDetector:
         unscrewing_torque_time_series = json.loads(unscrewing_torque_time_series_string)
         axial_force_time_series = json.loads(axial_force_time_series_string)
         approach_position_time_series = json.loads(approach_position_time_series_string)
+
+        data[
+            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus').lined}"
+        ] = [""]
 
         # Anomaly detection logic
         # iterate over unscrewing_torque_time_series and axial_force_time_series and position time series simultaneously
@@ -191,6 +203,9 @@ class AnomalyDetector:
                 "Unscrewing torque, axial force, and position time series must have the same length."
             )
 
+        # TODO:adjust the suggested decision tree logic  to the actual needs
+        # the flags are usefule if the disstinction based on the values in the TimeSeries alone are not conclusive
+
         # Flags to keep track of the process state
         approach_finished = False  # True once the screwdriver has reached the screw head, i.e. position_value <= hasPositionOnApproach
         screw_detected = False  # True once a screw is considered present, i.e. axial_force_value >= hasLowerAxialForce after approach_finished
@@ -206,11 +221,6 @@ class AnomalyDetector:
             # ------------------------------------------------------------
             # 1) Approach phase
             # ------------------------------------------------------------
-            # During approach, an occluded screw can be detected.
-            # The original text requires a dedicated approach force threshold.
-            # This value is currently not available in your variables.
-            # Therefore, hasLowerAxialForce is used here as an approximation.
-            # This does NOT exactly match the text.
             if not approach_finished:
                 if position_value > hasPositionOnApproach:
                     if axial_force_value > hasLowerAxialForce:
@@ -237,11 +247,7 @@ class AnomalyDetector:
             # ------------------------------------------------------------
             # If the screw is present but sufficient torque cannot be transmitted,
             # the screw head is considered rounded.
-            #
-            # Important mismatch with the text:
-            # The text excerpt mentions an example lower torque threshold of 0.1 Nm.
-            # Your KG value lower_tightening_torque may differ, e.g. 5.0.
-            # This implementation uses YOUR KG value.
+
             if screw_detected and not torque_applied:
                 if abs(torque_value) < lower_tightening_torque:
                     # Still allow the loop to continue until torque is actually attempted.
@@ -278,6 +284,7 @@ class AnomalyDetector:
                     disassembly_finished = True
                     status = "Successful"
                     break
+
         # Save the detected status back into the data structure
         data[
             f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus').lined}"

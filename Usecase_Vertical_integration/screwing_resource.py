@@ -57,6 +57,11 @@ class ScrewingResource:
                         "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
                     )
                 ],
+                [
+                    IRI(
+                        "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach"
+                    )
+                ],
             ]
         )
 
@@ -73,6 +78,9 @@ class ScrewingResource:
             ): [2.0],
             IRI(
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
+            ): [0.0],
+            IRI(
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach"
             ): [0.0],
         }
 
@@ -177,10 +185,6 @@ class ScrewingResource:
                 "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#RobotPositionTimeSeriesDataInstance1"
             ),
         )
-        pydantic_model = fetched_instance.materialize()  # TEST
-        serialized = pydantic_model.model_dump()
-        print("Fetched robot position time series data:")
-        print(json.dumps(serialized, indent=2))
 
         # Data for the unscrewing operation instance, linking to the screw type and the time series data
         property_chains = [
