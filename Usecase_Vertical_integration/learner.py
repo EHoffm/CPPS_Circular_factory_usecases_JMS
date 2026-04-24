@@ -103,6 +103,8 @@ class Learner:
                 named_graph=named_graph_iri,
             )
         ]
+        print(f"Found {len(iris)} unscrewing operation instances for learning.")
+        print(iris)
 
         # Direkte SPARQL-Query
         query = """
@@ -118,14 +120,18 @@ class Learner:
         result = self.ogm.db.query(query)
         print("SPARQL-Result:", result)
 
-        print(f"Found {len(iris)} unscrewing operation instances for learning.")
-        print(iris)
         for iri in iris:
-            # self.process_desriptions.append(self.ogm.fetch(self.prop_chains,instance_iri=iri).instance.model_dump()) # type: ignore TODO: Etienne
-            self.process_desriptions.append(self.ogm.fetch(self.prop_chains, instance_iri=iri).instance.model_dump(), materialize=True)  # type: ignore TODO: class_scope.from_property_chains(prop_chains)
-        print("Fetched process descriptions for learning:")
-        for desc in self.process_desriptions:
-            print(json.dumps(desc, indent=2))
+            print(f"Fetching data for IRI: {iri}")
+            try:
+                fetch_result = self.ogm.fetch(self.prop_chains, instance_iri=iri)
+                print(f"Fetch result: {fetch_result}")
+                instance_data = fetch_result.instance.model_dump(materialize=True)
+                print(f"Instance data: {instance_data}")
+                self.process_desriptions.append(instance_data)
+                print(f"Appended data for {iri}")
+            except Exception as e:
+                print(f"Error fetching data for {iri}: {e}")
+                # Optional: continue or break
 
     def learn_from_process_descriptions(self):
         learned_parameters = {}
@@ -145,12 +151,27 @@ class Learner:
         for screw in self.screws:  # TODO:MG: Hier implementieren wir die Lernlogik
             # implement learning logic here
             # der dict hat die struktur Screw_instance_iri: learned_parameters_dict
+            # soll sich je Schraube die unscrewingOperations fetchen und dann mit den echten Daten lernen, welche Parameter zu welchen Ergebnissen führen.
             learned_parameters[screw] = {
-                "hasOptimalUnscrewingTorque": 5.0,
-                "hasOptimalAxialForce": 10.0,
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerTighteningTorque"
+                ).lined: [5.0],
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUpperDynamicLoseningTorque"
+                ).lined: [15.0],
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerAxialForce"
+                ).lined: [10.0],
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach"
+                ).lined: [0.5],
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
+                ).lined: [0.2],
             }  # mocked data
+
         self.learned_parameters = learned_parameters
 
     def update_screwing_process_parameters(self, process_iri: IRI, parameters: dict):
         """updates the screwing process parameters in the graphdb with the learned parameters"""
-        self.ogm.commit(instance_iri=process_iri, data=self.learned_parameters)  # type: ignore #Todo für Etienne in KW 4
+        self.ogm.commit(instance_iri=process_iri, data=parameters)  # type: ignore #Todo für Etienne in KW 4
