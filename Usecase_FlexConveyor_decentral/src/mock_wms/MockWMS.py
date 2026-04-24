@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from kapps_ogm import OGM, ClassScope
 
 # Absolute import - src directory is added to sys.path by bootstrap
-from FlexConveyor_Module.Service import Service
+from FlexConveyor_Module.Workflow import Workflow
 
 
 class SpawnBoxPayload(BaseModel):
@@ -59,7 +59,7 @@ class MockWMS:
     def __init__(
         self, ogm: OGM, number_of_boxes: Optional[int] = 1, host: str = "0.0.0.0"
     ):
-        """Initialize the WMS service."""
+        """Initialize the WMS workflow."""
         if ogm is None:
             raise ValueError("OGM instance is required to initialize MockWMS")
 
@@ -72,7 +72,7 @@ class MockWMS:
         self.server_thread: Optional[threading.Thread] = None
         self.server: Optional[uvicorn.Server] = None
         self.running = False
-        self.services: set[Service] = set()
+        self.workflows: set[Workflow] = set()
         self.box_counter = 0
         self.box_counter_lock = threading.Lock()
         self.spawn_after_accept = True  # Auto-spawn boxes after acceptance
@@ -83,7 +83,7 @@ class MockWMS:
         self.logger_parent = logging.getLogger("MockWMS")
         self.logger = self.logger_parent.getChild("SubProjectLogic")
 
-        # Setup middleware data model (minimal, just for service registration)
+        # Setup middleware data model (minimal, just for workflow registration)
         data_model = smw.DataModel()
         self.mw.load_data_model(
             name=str(self.wms_id),
@@ -94,7 +94,7 @@ class MockWMS:
         # Register workflows
         def spawn_box(payload: SpawnBoxPayload) -> dict:
             """Spawn a box into the system."""
-            logger = self.logger_parent.getChild("SpawnBoxService")
+            logger = self.logger_parent.getChild("SpawnBoxWorkflow")
             logger.info(f"Invoked with payload: {payload}")
             response = self._spawn_box_workflow(
                 box_iri=payload.box_iri,
@@ -106,40 +106,40 @@ class MockWMS:
 
         def accept_box(payload: AcceptBoxPayload) -> dict:
             """Accept a delivered box."""
-            logger = self.logger_parent.getChild("AcceptBoxService")
+            logger = self.logger_parent.getChild("AcceptBoxWorkflow")
             logger.info(f"Invoked with payload: {payload}")
             response = self._accept_box_workflow(box_iri=payload.box_iri)
             logger.info(f"Completed with response: {response}")
             return response
 
-        # Create and register services
-        self.services.add(
-            Service(
-                service_method=spawn_box,
-                service_class=IRI(
-                    "http://w3id.org/circularfactory/FlexConveyor#SpawnBoxService"
+        # Create and register workflows
+        self.workflows.add(
+            Workflow(
+                workflow_method=spawn_box,
+                workflow_class=IRI(
+                    "http://w3id.org/circularfactory/FlexConveyor#SpawnBoxWorkflow"
                 ),
                 resource_instance=self.wms_id,
                 payload_model=SpawnBoxPayload,
-                logger=self.logger_parent.getChild("SpawnBoxService"),
+                logger=self.logger_parent.getChild("SpawnBoxWorkflow"),
             )
         )
 
-        self.services.add(
-            Service(
-                service_method=accept_box,
-                service_class=IRI(
-                    "http://w3id.org/circularfactory/FlexConveyor#AcceptBoxService"
+        self.workflows.add(
+            Workflow(
+                workflow_method=accept_box,
+                workflow_class=IRI(
+                    "http://w3id.org/circularfactory/FlexConveyor#AcceptBoxWorkflow"
                 ),
                 resource_instance=self.wms_id,
                 payload_model=AcceptBoxPayload,
-                logger=self.logger_parent.getChild("AcceptBoxService"),
+                logger=self.logger_parent.getChild("AcceptBoxWorkflow"),
             )
         )
 
-        # Register services in middleware
-        for service in self.services:
-            service.register_in_middleware(self.mw)
+        # Register workflows in middleware
+        for workflow in self.workflows:
+            workflow.register_in_middleware(self.mw)
 
         self.logger.info(f"Initialization complete")
 
@@ -167,9 +167,9 @@ class MockWMS:
         else:
             self.url = f"http://{self.host}:{self.port}"
 
-        # Register services in knowledge graph
-        for service in self.services:
-            service.register_in_graph_db(
+        # Register workflows in knowledge graph
+        for workflow in self.workflows:
+            workflow.register_in_graph_db(
                 host_url=self.url,
                 ogm=self.ogm,
                 named_graph=IRI(
@@ -183,7 +183,7 @@ class MockWMS:
             f"  Module ID:     {self.wms_id}\n"
             f"  Accessible at: {self.url}\n"
             f"  GUI access:    http://localhost:{self.port}/docs\n"
-            f"  Services:      {', '.join(s.name for s in self.services)}\n"
+            f"  Workflows:      {', '.join(s.name for s in self.workflows)}\n"
             f"{'='*70}"
         )
 
@@ -215,7 +215,7 @@ class MockWMS:
         """Stop the REST API server."""
         if not self.running:
             self.logger.warning(f"WMS is not running")
-            self._cleanup_services_in_knowledge_graph()
+            self._cleanup_workflows_in_knowledge_graph()
             return
 
         self.running = False
@@ -227,21 +227,21 @@ class MockWMS:
                 self.server.force_exit = True
                 self.server_thread.join(timeout=2)
 
-        self._cleanup_services_in_knowledge_graph()
+        self._cleanup_workflows_in_knowledge_graph()
         self.logger.info(f"MockWMS stopped")
 
-    def _cleanup_services_in_knowledge_graph(self):
-        """Remove service registrations from the knowledge graph."""
-        for service in self.services:
+    def _cleanup_workflows_in_knowledge_graph(self):
+        """Remove workflow registrations from the knowledge graph."""
+        for workflow in self.workflows:
             try:
-                service.deregister_in_graph_db(
+                workflow.deregister_in_graph_db(
                     ogm=self.ogm,
                     named_graph=IRI(
                         "http://w3id.org/circularfactory/FlexConveyorInstances"
                     ),
                 )
             except Exception as e:
-                self.logger.warning(f"Error cleaning service {service.name}: {e}")
+                self.logger.warning(f"Error cleaning workflow {workflow.name}: {e}")
 
     def _get_next_box_iri(self) -> str:
         """Generate a unique box IRI."""
@@ -471,17 +471,17 @@ class MockWMS:
             )
 
             # Call origin module's receive workflow
-            receive_service = Service.fetch_remote_service(
+            receive_workflow = Workflow.fetch_remote_workflow(
                 resource_instance=origin,
-                service_class=IRI(f"{FC}ReceiveService"),
+                workflow_class=IRI(f"{FC}ReceiveWorkflow"),
                 payload_model=ReceivePayload,
                 ogm=self.ogm,
                 logger=self.logger_parent.getChild(
-                    f"RemoteService@{origin.fragment}-ReceiveService"
+                    f"RemoteWorkflow@{origin.fragment}-ReceiveWorkflow"
                 ),
             )
 
-            response = receive_service(ReceivePayload(box_iri=box_iri))
+            response = receive_workflow(ReceivePayload(box_iri=box_iri))
 
             return {
                 "status": "spawned",

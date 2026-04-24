@@ -17,7 +17,7 @@ from .system_state_monitor import discover_modules as _discover_modules
 
 
 def discover_modules(ogm: OGM) -> List[Dict[str, str | None]]:
-    """Discover instantiated modules and their service URLs.
+    """Discover instantiated modules and their workflow URLs.
 
     Thin wrapper around the system_state_monitor helper so callers
     don't need to import it directly.
@@ -111,7 +111,7 @@ def inject_box_via_url(
     destination_iri: Optional[str] = None,
     timeout: int = 30,
 ) -> Dict[str, Any]:
-    """Fast path: inject a box using a known module service URL.
+    """Fast path: inject a box using a known module workflow URL.
 
     Sets up ownership in the knowledge graph first, then calls receive
     workflow on the entry module.
@@ -190,7 +190,7 @@ def inject_box(
     """Backward-compatible helper that resolves a module by ID via OGM.
 
     Prefer :func:`inject_box_via_url` when you already know the
-    module's service URL (e.g. from cached discovery in the UI).
+    module's workflow URL (e.g. from cached discovery in the UI).
     """
 
     if ogm is None:
@@ -220,7 +220,7 @@ def inject_box(
     if not accessible_at:
         return {
             "status": "error",
-            "error": f"Module '{entry_module_id}' has no accessibleAt service URL",
+            "error": f"Module '{entry_module_id}' has no accessibleAt workflow URL",
         }
 
     return inject_box_via_url(

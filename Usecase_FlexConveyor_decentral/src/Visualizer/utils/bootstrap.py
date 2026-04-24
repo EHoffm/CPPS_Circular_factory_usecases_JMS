@@ -218,7 +218,7 @@ _OBJECT_PROPERTY_FRAGMENTS = {
     "connectsTo",
     "hasDirection",
     "hasPossession",
-    "hasService",
+    "hasWorkflow",
 }
 
 

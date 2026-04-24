@@ -100,8 +100,8 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
         print("No instantiated modules found")
         return discovered
 
-    has_service_key = IRI(
-        "http://w3id.org/circularfactory/FlexConveyor#hasService"
+    has_workflow_key = IRI(
+        "http://w3id.org/circularfactory/FlexConveyor#hasWorkflow"
     ).lined
     accessible_at_key = IRI(
         "http://w3id.org/circularfactory/FlexConveyor#accessibleAt"
@@ -111,7 +111,7 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
         print(f"Discovered module: {module}")
         prop_chains = [
             [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasService"),
+                IRI("http://w3id.org/circularfactory/FlexConveyor#hasWorkflow"),
                 IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt"),
             ],
             [
@@ -127,19 +127,19 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
                 IRI("http://w3id.org/circularfactory/FlexConveyor#onPort"),
             ],
         ]
-        module_service = ogm.fetch(
+        module_workflow = ogm.fetch(
             instance_iri=module,
             class_scope=ClassScope.from_property_chains(prop_chains),
             materialize=True,
         )
-        module_data = _as_dict(module_service.instance)
-        services = module_data.get(has_service_key, [])
+        module_data = _as_dict(module_workflow.instance)
+        workflows = module_data.get(has_workflow_key, [])
 
         accessible_at: str | None = None
-        for service in services:
-            if not isinstance(service, dict):
+        for workflow in workflows:
+            if not isinstance(workflow, dict):
                 continue
-            locations = service.get(accessible_at_key, [])
+            locations = workflow.get(accessible_at_key, [])
             if not locations:
                 continue
             first_location = locations[0].split("workflows")[0]

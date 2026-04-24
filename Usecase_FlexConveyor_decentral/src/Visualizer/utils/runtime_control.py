@@ -42,7 +42,7 @@ def inject_box_via_receive(
     """Inject a box into a module's `receive` workflow by URL.
 
     Args:
-        entry_module_url: Base service URL of the target module
+        entry_module_url: Base workflow URL of the target module
             (its ``accessibleAt`` value).
         box_iri: IRI of the box to inject.
         destination_iri: Optional destination module IRI to set/override.

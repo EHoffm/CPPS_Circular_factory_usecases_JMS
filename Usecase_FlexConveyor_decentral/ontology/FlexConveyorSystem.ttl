@@ -18,16 +18,16 @@
 # M2
 #################################################################
 
-:Service rdf:type owl:Class .
+:Workflow rdf:type owl:Class .
 
-:hasService rdf:type owl:ObjectProperty ;
+:hasWorkflow rdf:type owl:ObjectProperty ;
     rdfs:domain cfc:Resource ;
-    rdfs:range :Service ;
-    owl:inverseOf :isServiceOf .
+    rdfs:range :Workflow ;
+    owl:inverseOf :isWorkflowOf .
 
-:isServiceOf rdf:type owl:ObjectProperty ;
-    owl:inverseOf :hasService ;
-    rdfs:domain :Service ;
+:isWorkflowOf rdf:type owl:ObjectProperty ;
+    owl:inverseOf :hasWorkflow ;
+    rdfs:domain :Workflow ;
     rdfs:range cfc:Resource .
 
 #################################################################
@@ -50,20 +50,20 @@
 
 :Connection rdf:type owl:Class .
 
-:SpawnBoxService rdf:type owl:Class ;
-    rdfs:subClassOf :Service .
+:SpawnBoxWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf :Workflow .
 
-:AcceptBoxService rdf:type owl:Class ;
-    rdfs:subClassOf :Service .
+:AcceptBoxWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf :Workflow .
 
-:ReserveService rdf:type owl:Class ;
-    rdfs:subClassOf :Service .
+:ReserveWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf :Workflow .
 
-:ConveyService rdf:type owl:Class ;
-    rdfs:subClassOf :Service .
+:ConveyWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf :Workflow .
 
-:ReceiveService rdf:type owl:Class ;
-    rdfs:subClassOf :Service .
+:ReceiveWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf :Workflow .
 
 :BoxState rdf:type owl:Class .
 
@@ -142,7 +142,7 @@
     rdfs:range xsd:integer .
 
 :accessibleAt rdf:type owl:DatatypeProperty ;
-    rdfs:domain :Service ;
+    rdfs:domain :Workflow ;
     rdfs:range xsd:anyURI .
 
 
