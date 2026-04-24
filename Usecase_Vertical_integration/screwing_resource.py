@@ -94,7 +94,7 @@ class ScrewingResource:
             self.ogm.create(
                 instance_iri=screw_type,
                 class_iri=IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#screw"
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#Screw"
                 ),
                 class_scope=screw_class_scope,
                 data=screw_data,
@@ -214,7 +214,7 @@ class ScrewingResource:
             ],
         ]
         unscrewing_operation_scope = ClassScope.from_property_chains(property_chains)
-        if suffix == "unscrewingOperation2":
+        if suffix == "UnscrewingOperation2":
             status = "Successful"
         else:
             status = "unknown"  # Placeholder, to be updated by anomaly detector after analysis
@@ -250,7 +250,7 @@ class ScrewingResource:
         self.ogm.create(
             instance_iri=instance_iri,
             class_iri=IRI(
-                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#unscrewingOperation"
+                "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation"
             ),
             class_scope=unscrewing_operation_scope,
             data=data,

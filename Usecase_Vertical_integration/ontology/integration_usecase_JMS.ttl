@@ -12,12 +12,12 @@
 #################################################################
 # Classes
 #################################################################
-:screw a owl:Class ;
+:Screw a owl:Class ;
     rdfs:subClassOf :Product ;
     rdfs:label "Screw"@en ;
     rdfs:comment "A screw is a type of fastener characterized by a helical ridge"@en .
 
-:unscrewingOperation a owl:Class ;
+:UnscrewingOperation a owl:Class ;
     rdfs:subClassOf :Process ;
     rdfs:label "Unscrewing Process"@en ;
     rdfs:comment "The unscrewing process involves the removal of a screw from a material or object"@en .
@@ -51,45 +51,45 @@
 #################################################################
 
 :hasScrew a owl:ObjectProperty ;
-    rdfs:domain :unscrewingOperation ;
-    rdfs:range :screw;
+    rdfs:domain :UnscrewingOperation;
+    rdfs:range :Screw ;
     rdfs:label "has screw"@en ;
     rdfs:comment "Links the unscrewing operation to the specific screw being removed."@en .
 
 :hasOperation a owl:ObjectProperty ;
-    rdfs:domain :screw ;
-    rdfs:range :unscrewingOperation ;
+    rdfs:domain :Screw ;
+    rdfs:range :UnscrewingOperation ;
     rdfs:label "has operation"@en ;
     rdfs:comment "Links the screw to the unscrewing operation performed on it."@en ;
     owl:inverseOf :hasScrew .
 
 :hasResource a owl:ObjectProperty ;
-    rdfs:domain :unscrewingOperation ;
+    rdfs:domain :UnscrewingOperation ;
     rdfs:range :ScrewingResource ;
     rdfs:label "has resource"@en ;
     rdfs:comment "Links the unscrewing operation to the specific resource (e.g., screwdriver) used in the process."@en .
 
 :hasOperations a owl:ObjectProperty ;
     rdfs:domain :ScrewingResource ;
-    rdfs:range :unscrewingOperation ;
+    rdfs:range :UnscrewingOperation ;
     rdfs:label "has operations"@en ;
     rdfs:comment "Links the transformer cell to the unscrewing operations performed on it."@en ;
     owl:inverseOf :hasResource .
 
 :hasUnscrewingTorqueTimeSeriesData a owl:ObjectProperty ;
-    rdfs:domain :unscrewingOperation ;
+    rdfs:domain :UnscrewingOperation ;
     rdfs:range :TimeSeriesData ;
     rdfs:label "has unscrewing time series data"@en ;
     rdfs:comment "Links to the time series data recorded during the unscrewing process."@en .
 
 :hasAxialForceTimeSeriesData a owl:ObjectProperty ;
-    rdfs:domain :unscrewingOperation ;
+    rdfs:domain :UnscrewingOperation ;
     rdfs:range :TimeSeriesData ;
     rdfs:label "has axial force time series data"@en ;
     rdfs:comment "Links to the time series data of axial force recorded during the unscrewing process."@en .
 
 :hasRobotPositionTimeSeriesData a owl:ObjectProperty ;
-    rdfs:domain :unscrewingOperation ;
+    rdfs:domain :UnscrewingOperation ;
     rdfs:range :TimeSeriesData ;
     rdfs:label "has position time series data"@en ;
     rdfs:comment "Links to the time series data of robot TCO position along screw axis recorded during the unscrewing process."@en .
@@ -120,13 +120,13 @@
 
 :hasPartScrew a owl:ObjectProperty ;
     rdfs:domain :Anglegrinder ;
-    rdfs:range :screw ;
+    rdfs:range :Screw ;
     rdfs:label "has part screw"@en ;
     rdfs:comment "Links the angle grinder to the specific screw that is part of the product being worked on."@en ;
     owl:inverseOf :isPartScrewOf .
 
 :isPartScrewOf a owl:ObjectProperty ;
-    rdfs:domain :screw ;
+    rdfs:domain :Screw ;
     rdfs:range :Anglegrinder ;
     rdfs:label "is part of"@en ;
     rdfs:comment "Indicates that the screw is a component of the angle grinder."@en ;
@@ -136,7 +136,7 @@
 # Datatype Properties
 #################################################################
 :hasSuccessStatus a owl:DatatypeProperty ;
-    rdfs:domain :unscrewingOperation ;
+    rdfs:domain :UnscrewingOperation ;
     rdfs:range xsd:string ;
     rdfs:label "has successstatus"@en ;
     rdfs:comment "Indicates whether the unscrewing process was successful (true) or not (false)."@en .
@@ -149,31 +149,31 @@
     rdfs:comment "Contains the time series data in JSON format."@en .
 
 :hasLowerTighteningTorque a owl:DatatypeProperty ;
-    rdfs:domain :screw ;
+    rdfs:domain :Screw ;
     rdfs:range xsd:decimal ;
     rdfs:label "has lower tightening torque"@en ;
     rdfs:comment "Indicates the minimum torque required to properly tighten the screw. to check if torque can be applied to it."@en .
 
 :hasUpperDynamicLoseningTorque a owl:DatatypeProperty ;
-    rdfs:domain :screw ;
+    rdfs:domain :Screw ;
     rdfs:range xsd:decimal ;
     rdfs:label "has upper dynamic loosening torque"@en ;
     rdfs:comment "Specifies the maximum torque at which the screw may loosen under dynamic" .
 
 :hasLowerAxialForce a owl:DatatypeProperty ;
-    rdfs:domain :screw ;
+    rdfs:domain :Screw ;
     rdfs:range xsd:decimal ;
     rdfs:label "has lower axial force"@en ;
     rdfs:comment "minimum axial force that indicates the screw moving towards the screwdriver"@en .
 
 :hasAxialForceApproach a owl:DatatypeProperty ;
-    rdfs:domain :screw ;
+    rdfs:domain :Screw ;
     rdfs:range xsd:decimal ;
     rdfs:label "has axial force on approach"@en ;
     rdfs:comment "The axial force measured while the screwdriver approaches the screw head."@en .
 		
 :hasPositionOnApproach a owl:DatatypeProperty ;
-    rdfs:domain :screw ;
+    rdfs:domain :Screw ;
     rdfs:range xsd:decimal ;
     rdfs:label "Position on approach"@en ;
     rdfs:comment "The position along the screw axis when approaching the screw."@en .

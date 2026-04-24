@@ -308,4 +308,6 @@ class AnomalyDetector:
         ),
     ):
         """updates the instance in the graphdb with the annotated data"""
-        self.ogm.commit(instance_iri=instance_iri, data=data, named_graph=named_graph_iri)  # type: ignore #Todo für Etienne in KW 4
+        self.ogm.commit(
+            instance_iri=instance_iri, data=data, named_graph=named_graph_iri
+        )  #  #type: ignore #Todo für Etienne in KW 4

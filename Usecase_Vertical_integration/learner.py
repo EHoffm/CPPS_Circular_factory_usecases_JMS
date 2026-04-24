@@ -17,26 +17,115 @@ class Learner:
         self.screws = [
             s
             for s, p, o in self.ogm.db.triples_get(
-                # pred=IRI("w3.org/1999/02/22-rdf-syntax-ns#type"),
                 pred=IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
                 obj=IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#Screw"),
             )
         ]
-        self.prop_chains = ["as in anomaly_detector"]
 
-    def get_all_process_descriptions(self):
+        print(f"Found screws in the graph: {self.screws}")
+        self.prop_chains = [
+            [
+                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerTighteningTorque"
+                ),
+            ],
+            [
+                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUpperDynamicLoseningTorque"
+                ),
+            ],
+            [
+                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasLowerAxialForce"
+                ),
+            ],
+            [
+                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasPositionOnApproach"
+                ),
+            ],
+            [
+                IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceApproach"
+                ),
+            ],
+            [IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasResource")],
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasUnscrewingTorqueTimeSeriesData"
+                ),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+                ),
+            ],
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasAxialForceTimeSeriesData"
+                ),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+                ),
+            ],
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasRobotPositionTimeSeriesData"
+                ),
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasJSONEncodedTimeSeriesData"
+                ),
+            ],
+            [
+                IRI(
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus"
+                ),
+            ],
+        ]
+
+    def get_all_process_descriptions(
+        self,
+        named_graph_iri: IRI = IRI(
+            "http://w3id.org/circularfactory/UsecaseVerticalIntegrationInstances"
+        ),
+    ) -> None:
+
         iris = [
             s
             for s, p, o in self.ogm.db.triples_get(
                 pred=IRI("https://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
                 obj=IRI(
-                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#ProcessDescription"
+                    "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation"
                 ),
+                named_graph=named_graph_iri,
             )
         ]
+
+        # Direkte SPARQL-Query
+        query = """
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX demo: <https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#>
+        SELECT ?s
+        WHERE {
+            GRAPH <http://w3id.org/circularfactory/UsecaseVerticalIntegrationInstances> { 
+                ?s rdf:type demo:UnscrewingOperation .
+            }
+        }
+        """
+        result = self.ogm.db.query(query)
+        print("SPARQL-Result:", result)
+
+        print(f"Found {len(iris)} unscrewing operation instances for learning.")
+        print(iris)
         for iri in iris:
             # self.process_desriptions.append(self.ogm.fetch(self.prop_chains,instance_iri=iri).instance.model_dump()) # type: ignore TODO: Etienne
             self.process_desriptions.append(self.ogm.fetch(self.prop_chains, instance_iri=iri).instance.model_dump(), materialize=True)  # type: ignore TODO: class_scope.from_property_chains(prop_chains)
+        print("Fetched process descriptions for learning:")
+        for desc in self.process_desriptions:
+            print(json.dumps(desc, indent=2))
 
     def learn_from_process_descriptions(self):
         learned_parameters = {}
@@ -64,4 +153,4 @@ class Learner:
 
     def update_screwing_process_parameters(self, process_iri: IRI, parameters: dict):
         """updates the screwing process parameters in the graphdb with the learned parameters"""
-        self.ogm.commit(process_iri, self.learned_parameters, persist=True)  # type: ignore #Todo für Etienne in KW 4
+        self.ogm.commit(instance_iri=process_iri, data=self.learned_parameters)  # type: ignore #Todo für Etienne in KW 4
