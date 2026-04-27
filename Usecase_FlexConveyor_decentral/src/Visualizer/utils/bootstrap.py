@@ -210,6 +210,12 @@ def stop_wms() -> bool:
         return False
 
 
+def get_wms() -> Optional[Any]:
+    """Return the currently running WMS instance, or None if not running."""
+    with _running_wms_lock:
+        return _running_wms
+
+
 # Object properties whose values must be {"id": "..."} dicts, not plain strings.
 # OGM's Node expects object-property values to be dicts so it can convert them
 # into Node references.  The JSON exported by the GUI stores them as bare IRI
@@ -281,13 +287,8 @@ def instantiate_modules(
     """
     register_shutdown_handlers()
 
-    # Add src directory to Python path to import FlexConveyor_Module
-    src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-    if src_dir not in sys.path:
-        sys.path.insert(0, src_dir)
-
     flex_module_module = importlib.import_module(
-        "FlexConveyor_Module.FlexConveyorModule"
+        "Usecase_FlexConveyor_decentral.src.FlexConveyor_Module.FlexConveyorModule"
     )
     flex_module_module = importlib.reload(flex_module_module)
     FlexConveyor = flex_module_module.FlexConveyor
@@ -412,7 +413,7 @@ def instantiate_modules(
                 result = {
                     "module_id": str(node.id),
                     "status": "running",
-                    "api_url": flex_module.get_api_url(),
+                    "api_url": flex_module.url,
                     "port": flex_module.port,
                 }
                 results.append(result)
@@ -481,14 +482,11 @@ def instantiate_wms(
 
     register_shutdown_handlers()
 
-    # Add src directory to Python path
-    src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-    if src_dir not in sys.path:
-        sys.path.insert(0, src_dir)
-
     try:
         # Import MockWMS class
-        wms_module = importlib.import_module("mock_wms.MockWMS")
+        wms_module = importlib.import_module(
+            "Usecase_FlexConveyor_decentral.src.Mock_WMS.MockWMS"
+        )
         wms_module = importlib.reload(wms_module)
         MockWMS = wms_module.MockWMS
 
@@ -532,7 +530,7 @@ def instantiate_wms(
         result = {
             "wms_id": str(wms.wms_id),
             "status": "running",
-            "api_url": wms.get_api_url(),
+            "api_url": wms.url,
             "port": wms.port,
         }
 

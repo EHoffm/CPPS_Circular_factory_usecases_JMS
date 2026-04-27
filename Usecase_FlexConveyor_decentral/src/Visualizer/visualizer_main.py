@@ -43,6 +43,7 @@ from utils.bootstrap import (
     register_shutdown_handlers,
     instantiate_modules,
     instantiate_wms,
+    get_wms,
 )
 from utils import (
     initialize_login_session_state,
@@ -198,6 +199,19 @@ else:
                 st.error(
                     "❌ No modules were successfully instantiated. WMS not started."
                 )
+
+    # Handle WMS spawn-box request
+    if st.session_state.get("wms_spawn_box_requested", False):
+        st.session_state.wms_spawn_box_requested = False
+        wms = get_wms()
+        if wms is None:
+            st.error("❌ WMS is not running. Instantiate it first.")
+        else:
+            try:
+                wms._spawn_random_box()
+                st.success("✅ Spawned a new box into the system.")
+            except Exception as e:
+                st.error(f"❌ Spawn failed: {e}")
 
     # Handle WMS-only instantiation request
     if st.session_state.get("wms_instantiation_requested", False):

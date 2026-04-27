@@ -1,41 +1,27 @@
 import heapq
+import logging
 import json
 import threading
 import time
 from collections import deque
 from typing import Optional, Any, Dict
-import requests
-import uvicorn
 import semantic_middleware as smw
 from graph_db_interface.utils.iri import IRI
-from pydantic import BaseModel
 
 from kapps_ogm import OGM, ClassScope
+from Service.Service import Service
 from semantic_middleware.model.util import (
     convert_camel_case_to_underscrore_str,
     get_id_with_patch,
 )
 
-from .Workflow import Workflow
-
-import logging
+from Service.Workflow import Workflow, WorkflowPayload, WorkflowResponse
 
 
-class ReceivePayload(BaseModel):
-    box_iri: str
+FC = "http://w3id.org/circularfactory/FlexConveyor#"
 
 
-class ReservePayload(BaseModel):
-    box_iri: str
-    source_module_iri: str
-
-
-class ConveyPayload(BaseModel):
-    box_iri: str
-    destination_module_iri: str
-
-
-class FlexConveyor:
+class FlexConveyor(Service):
     """Represents a FlexConveyor module in the system.
 
     Each instance runs a separate middleware instance with its own REST API server
@@ -46,16 +32,7 @@ class FlexConveyor:
     and machines.
     """
 
-    # Class-level port counter for thread-safe port assignment
-    _port_counter = 8000
-    _port_lock = threading.Lock()
-
-    @classmethod
-    def _get_next_port(cls) -> int:
-        """Thread-safe port assignment across all instances."""
-        with cls._port_lock:
-            cls._port_counter += 1
-            return cls._port_counter
+    NAMED_GRAPH = IRI("http://w3id.org/circularfactory/FlexConveyorInstances")
 
     def __init__(
         self,
@@ -64,295 +41,93 @@ class FlexConveyor:
         host: str = "0.0.0.0",
         concurrent_guard_override: bool = True,
     ):
-        """Initialize one module workflow."""
+        """Initialize one FlexConveyor module."""
         if ogm is None:
             raise ValueError(
                 "OGM instance is required to initialize FlexConveyor module"
             )
 
-        self.module_id = module_id
-        self.ogm = ogm
         self.concurrent_guard_override = concurrent_guard_override
-        self.mw = smw.Middleware()
-        self.host = host
-        self.port = self._get_next_port()
-        self.url: Optional[str] = None  # Will be set when server starts
-        self.server_thread: Optional[threading.Thread] = None
-        self.server: Optional[uvicorn.Server] = None
-        self.running = False
         self.topology_graph: Dict[str, list] = {}
         self.accessible_at_by_module: dict[IRI, str | None] = {}
-        self.workflow_instance_iri: Optional[IRI] = None
         self._reserve_queue: deque[dict[str, Any]] = deque()
         self._reserve_queue_lock = threading.Lock()
         self._reserve_worker_running = False
-        self.workflows: set[Workflow] = set()
-        self.remote_workflows: dict[IRI, dict[str, Workflow]] = {}
         self.routing_table: Dict[str, str] = {}
 
-        self.logger_parent = logging.getLogger(
-            f"FlexConveyor-{self.module_id.fragment}"
-        )
-        self.logger = self.logger_parent.getChild(f"SubProjectLogic")
+        super().__init__(service_id=module_id, ogm=ogm, host=host)
 
-        # Setup middleware
+    @property
+    def module_id(self) -> IRI:
+        """Alias for service_id, preserving the original interface."""
+        return self.service_id
+
+    def _setup_middleware_data_model(self) -> None:
+        """
+        Load the FlexConveyor module's OGM data node into the middleware.
+        Falls back to manual DataModel population if schema introspection fails.
+        """
         property_chains = [
-            [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
-                IRI("http://w3id.org/circularfactory/FlexConveyor#connectsTo"),
-            ],
-            [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection"),
-            ],
-            [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
-                IRI("http://w3id.org/circularfactory/FlexConveyor#onPort"),
-            ],
-            [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasWorkflow"),
-                IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt"),
-            ],
+            [IRI(f"{FC}hasConnection"), IRI(f"{FC}connectsTo")],
+            [IRI(f"{FC}hasConnection"), IRI(f"{FC}hasDirection")],
+            [IRI(f"{FC}hasConnection"), IRI(f"{FC}onPort")],
         ]
         class_scope = ClassScope.from_property_chains(property_chains)
-        data_node = self.ogm.fetch(
-            instance_iri=self.module_id, class_scope=class_scope, materialize=True
-        )
 
-        # OGM-generated dynamic Pydantic models can have field annotations
-        # that are incompatible with semantic_middleware's schema introspection
-        # (issubclass checks). Fall back to manual DataModel population.
+        try:
+            instance = self.ogm.fetch(
+                instance_iri=self.service_id, class_scope=class_scope, materialize=True
+            ).instance
+        except Exception as e:
+            msg = f"Failed to fetch instance for {self.service_id} from OGM: {e}"
+            self.logger.error(msg)
+
         try:
             self.mw.load_data_model(
-                name=str(self.module_id),
-                data_model=smw.DataModel.from_models(data_node.instance),
+                name=str(self.service_id),
+                data_model=smw.DataModel.from_models(instance),
                 persist_instances=True,
             )
-        except TypeError as e:
-            if "issubclass" in str(e):
-                self.logger.warning(
-                    f"Schema introspection failed, using simplified fallback"
-                )
-                data_model = smw.DataModel()
-                model_id = get_id_with_patch(data_node.instance)
-                data_model._key_ids_models[model_id] = data_node.instance
-                type_name = type(data_node.instance).__name__.split(".")[-1]
-                data_model._models_key_type.setdefault(type_name, []).append(model_id)
-                data_model._schemas[type_name] = type(data_node.instance)
-                underscore_name = convert_camel_case_to_underscrore_str(type_name)
-                data_model._top_level_models.setdefault(underscore_name, []).append(
-                    model_id
-                )
-                data_model._top_level_schemas.add(type_name)
-                self.mw.load_data_model(
-                    name=str(self.module_id),
-                    data_model=data_model,
-                    persist_instances=True,
-                )
-            else:
-                raise
-
-        try:
-            self.mw.generate_rest_api_for_data_model(str(self.module_id))
-        except TypeError as e:
-            if "issubclass" in str(e):
-                self.logger.warning(
-                    f"REST API generation limited (schema introspection issue)"
-                )
-            else:
-                raise
-
-        def reserve(payload: ReservePayload) -> dict:
-            """Step 1: Reserve workflow - check if this module is ready to receive.
-
-            Called by the source module before attempting to transfer a parcel.
-            This module checks if it currently has a parcel; if so, it waits
-            until the parcel is moved from it before returning ready status.
-            """
-            logger = self.logger_parent.getChild("ReserveWorkflow")
-            logger.info(f"Invoked with payload: {payload}")
-            response = self.reserve(
-                payload.box_iri,
-                payload.source_module_iri,
-            )
-            logger.info(f"Completed with response: {response}")
-            return response
-
-        def convey(payload: ConveyPayload) -> dict:
-            """Step 2: Convey workflow - transfer parcel ownership.
-
-            Called on the source module by the destination module.
-            Source removes ownership, then triggers destination receive.
-            """
-            logger = self.logger_parent.getChild("ConveyWorkflow")
-            logger.info(f"Invoked with payload: {payload}")
-            response = self.convey(
-                payload.box_iri,
-                payload.destination_module_iri,
-            )
-            logger.info(f"Completed with response: {response}")
-            return response
-
-        def receive(payload: ReceivePayload) -> dict:
-            """Step 3: Receive workflow - finalize reception and route.
-
-            Called by the source module after convey completes.
-            Updates the parcel state and runs Dijkstra to route to the
-            next hop or destination.
-            """
-            logger = self.logger_parent.getChild("ReceiveWorkflow")
-            logger.info(f"Invoked with payload: {payload}")
-            response = self.receive(
-                payload.box_iri,
-            )
-            logger.info(f"Completed with response: {response}")
-            return response
-
-        self.workflows = {
-            Workflow(
-                workflow_method=reserve,
-                workflow_class=IRI(
-                    "http://w3id.org/circularfactory/FlexConveyor#ReserveWorkflow"
-                ),
-                resource_instance=self.module_id,
-                payload_model=ReservePayload,
-                logger=self.logger_parent.getChild("ReserveWorkflow"),
-            ),
-            Workflow(
-                workflow_method=convey,
-                workflow_class=IRI(
-                    "http://w3id.org/circularfactory/FlexConveyor#ConveyWorkflow"
-                ),
-                resource_instance=self.module_id,
-                payload_model=ConveyPayload,
-                logger=self.logger_parent.getChild("ConveyWorkflow"),
-            ),
-            Workflow(
-                workflow_method=receive,
-                workflow_class=IRI(
-                    "http://w3id.org/circularfactory/FlexConveyor#ReceiveWorkflow"
-                ),
-                resource_instance=self.module_id,
-                payload_model=ReceivePayload,
-                logger=self.logger_parent.getChild("ReceiveWorkflow"),
-            ),
-        }
-
-        for workflow in self.workflows:
-            workflow.register_in_middleware(self.mw)
-
-        self.logger.info(f"Initialization complete")
-
-    def start(self):
-        """Start the REST API server in a background thread."""
-        if self.running:
-            self.logger.warning(
-                f"Module {self.module_id} is already running at {self.url}"
-            )
-            return
-
-        self.running = True
-        self.server_thread = threading.Thread(
-            target=self._run_server, daemon=False, name=f"FlexConveyor-{self.module_id}"
-        )
-        self.server_thread.start()
-
-        # Give server time to start and bind to port
-        time.sleep(1)
-
-        # Construct the accessible URL
-        # If host is 0.0.0.0, use localhost for local access or the actual hostname for remote
-        if self.host == "0.0.0.0":
-            import socket
-
-            hostname = socket.gethostname()
-            self.url = f"http://{hostname}:{self.port}"
-        else:
-            self.url = f"http://{self.host}:{self.port}"
-
-        for workflow in self.workflows:
-            workflow.register_in_graph_db(
-                host_url=self.url,
-                ogm=self.ogm,
-                named_graph=IRI(
-                    "http://w3id.org/circularfactory/FlexConveyorInstances"
-                ),
-            )
-
-        self.logger.info(
-            f"\n{'='*70}\n"
-            f"  FlexConveyor REST API Started\n"
-            f"  Module ID:     {self.module_id}\n"
-            f"  Accessible at: {self.url}\n"
-            f"  GUI access:    http://localhost:{self.port}/docs\n"
-            f"  Workflows:      {', '.join(s.name for s in self.workflows)}\n"
-            f"{'='*70}"
-        )
-
-    def _run_server(self):
-        """Run the uvicorn server for this middleware instance."""
-        config = uvicorn.Config(
-            app=self.mw.app,
-            host=self.host,
-            port=self.port,
-            log_level="info",
-        )
-        self.server = uvicorn.Server(config)
-        try:
-            self.server.run()
         except Exception as e:
-            self.logger.error(f"Server error on {self.module_id}: {e}")
-        finally:
-            self.running = False
+            msg = f"Failed to load data model for {self.service_id} to middleware: {e}"
+            self.logger.error(msg)
+            raise RuntimeError(msg)
 
-    def stop(self):
-        """Stop the REST API server."""
-        if not self.running:
-            self.logger.warning(f"Module {self.module_id} is not running")
-            self._cleanup_workflows_in_knowledge_graph()
-            return
+        try:
+            self.mw.generate_rest_api_for_data_model(str(self.service_id))
+        except Exception as e:
+            msg = f"Failed to generate REST API for {self.service_id}: {e}"
+            self.logger.error(msg)
+            raise RuntimeError(msg)
 
-        self.running = False
-        if self.server is not None:
-            self.server.should_exit = True
-        if self.server_thread:
-            self.server_thread.join(timeout=10)
-            if self.server_thread.is_alive() and self.server is not None:
-                self.server.force_exit = True
-                self.server_thread.join(timeout=2)
-        self._cleanup_workflows_in_knowledge_graph()
-        self.logger.info(f"FlexConveyor {self.module_id} stopped")
-
-    def _cleanup_workflows_in_knowledge_graph(self):
-        """Remove workflow registrations from the knowledge graph."""
-        for workflow in self.workflows:
-            try:
-                workflow.deregister_in_graph_db(
-                    ogm=self.ogm,
-                    named_graph=IRI(
-                        "http://w3id.org/circularfactory/FlexConveyorInstances"
-                    ),
-                )
-            except Exception as e:
-                self.logger.warning(f"Error cleaning workflow {workflow.name}: {e}")
+    def on_start(self) -> None:
+        """Discover remote workflow proxies and build the routing table."""
+        try:
+            self._discover_remote_workflows()
+            self._populate_routing_table()
+        except Exception as e:
+            self.logger.warning(
+                f"Remote workflow discovery at startup failed: {e}. "
+                "Will retry lazily on first workflow invocation."
+            )
 
     @staticmethod
     def _direction_to_index(direction: str | None) -> int | None:
         if not direction:
             return None
         direction_map = {
-            "http://w3id.org/circularfactory/FlexConveyor#North": 1,
-            "http://w3id.org/circularfactory/FlexConveyor#East": 2,
-            "http://w3id.org/circularfactory/FlexConveyor#South": 3,
-            "http://w3id.org/circularfactory/FlexConveyor#West": 4,
+            f"{FC}North": 1,
+            f"{FC}East": 2,
+            f"{FC}South": 3,
+            f"{FC}West": 4,
         }
         return direction_map.get(str(direction))
 
     def _discover_remote_workflows(self):
         property_chains = [
             [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
-                IRI("http://w3id.org/circularfactory/FlexConveyor#connectsTo"),
+                IRI(f"{FC}hasConnection"),
+                IRI(f"{FC}connectsTo"),
             ]
         ]
         class_scope = ClassScope.from_property_chains(property_chains)
@@ -363,14 +138,12 @@ class FlexConveyor:
         neighbor_module_iris: set[IRI] = set()
         for connection in getattr(
             data_node.instance,
-            IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection").lined,
+            IRI(f"{FC}hasConnection").lined,
         ):
             neighbor_module_iris.add(
                 getattr(
                     connection,
-                    IRI(
-                        "http://w3id.org/circularfactory/FlexConveyor#connectsTo"
-                    ).lined,
+                    IRI(f"{FC}connectsTo").lined,
                 )[0].id
             )
 
@@ -378,10 +151,7 @@ class FlexConveyor:
             self.remote_workflows[module_iri] = {
                 "receive": Workflow.fetch_remote_workflow(
                     resource_instance=module_iri,
-                    workflow_class=IRI(
-                        "http://w3id.org/circularfactory/FlexConveyor#ReceiveWorkflow"
-                    ),
-                    payload_model=ReceivePayload,
+                    workflow_class=IRI(f"{FC}ReceiveWorkflow"),
                     ogm=self.ogm,
                     logger=self.logger_parent.getChild(
                         f"RemoteWorkflow@{module_iri.fragment}-ReceiveWorkflow"
@@ -389,10 +159,7 @@ class FlexConveyor:
                 ),
                 "reserve": Workflow.fetch_remote_workflow(
                     resource_instance=module_iri,
-                    workflow_class=IRI(
-                        "http://w3id.org/circularfactory/FlexConveyor#ReserveWorkflow"
-                    ),
-                    payload_model=ReservePayload,
+                    workflow_class=IRI(f"{FC}ReserveWorkflow"),
                     ogm=self.ogm,
                     logger=self.logger_parent.getChild(
                         f"RemoteWorkflow@{module_iri.fragment}-ReserveWorkflow"
@@ -400,10 +167,7 @@ class FlexConveyor:
                 ),
                 "convey": Workflow.fetch_remote_workflow(
                     resource_instance=module_iri,
-                    workflow_class=IRI(
-                        "http://w3id.org/circularfactory/FlexConveyor#ConveyWorkflow"
-                    ),
-                    payload_model=ConveyPayload,
+                    workflow_class=IRI(f"{FC}ConveyWorkflow"),
                     ogm=self.ogm,
                     logger=self.logger_parent.getChild(
                         f"RemoteWorkflow@{module_iri.fragment}-ConveyWorkflow"
@@ -596,12 +360,33 @@ class FlexConveyor:
     #  Three-step parcel movement workflows
     # ------------------------------------------------------------------
 
-    def reserve(self, box_iri: str, source_module_iri: str) -> dict:
-        """Step 1: Reserve - enqueue caller and process in FIFO order.
-
-        Every reserve caller is queued. This module will trigger convey
-        strictly in queue order (first caller, then second, ...).
+    @Service.workflow(workflow_class=IRI(f"{FC}ReserveWorkflow"), key="reserve")
+    def reserve_workflow(self, payload: WorkflowPayload) -> WorkflowResponse:
         """
+        Implements http://w3id.org/circularfactory/FlexConveyor#ReserveWorkflow
+
+        Payload structure:
+            - box_iri: IRI of the box to be conveyed
+            - source_module_iri: IRI of the module from which the box is to be conveyed
+
+        Response structure:
+            - status_code: HTTP status code indicating success or type of failure
+            - status: Short string indicating result ("success", "timeout", "error", etc.)
+            - message: Human-readable message describing the result
+            - data: Optional field for additional response data, encoded as a JSON string
+            - response_module: IRI of the module processing the request (this module)
+            - response_box: IRI of the box involved in the request
+            - response_module: IRI of the source module from the request
+            - response_source_module: IRI of the source module from the request
+
+        """
+        box_iri = IRI(getattr(payload, IRI(f"{FC}refersToBox").lined))
+        source_module_iri = IRI(
+            getattr(payload, IRI(f"{FC}refersToSourceModule").lined)
+        )
+
+        response_model = self.workflows.get("reserve").response_model
+
         self.logger.info(
             f"Reserve called for box {box_iri} from source {source_module_iri}"
         )
@@ -637,11 +422,14 @@ class FlexConveyor:
         return (
             request["result"]
             if request["result"] is not None
-            else {
-                "status": "error",
-                "module": str(self.module_id),
-                "reason": "Reserve queue processing returned no result",
-            }
+            else response_model(
+                status_code=500,
+                status="queue_no_result",
+                message="Reserve queue processing returned no result",
+                content=json.dumps(
+                    {IRI(f"{FC}response_module").lined: str(self.module_id)}
+                ),
+            )
         )
 
     def _process_reserve_queue(self) -> None:
@@ -661,21 +449,28 @@ class FlexConveyor:
             except Exception as e:
                 import traceback
 
-                result = {
-                    "status": "error",
-                    "module": str(self.module_id),
-                    "reason": str(e),
-                    "traceback": traceback.format_exc(),
-                }
+                response_model = self.workflows.get("reserve").response_model
+                result = response_model(
+                    status_code=500,
+                    status="error",
+                    message=f"Reserve queue processing failed: {str(e)}",
+                    content=json.dumps(
+                        {
+                            IRI(f"{FC}response_module").lined: str(self.module_id),
+                            "traceback": traceback.format_exc(),
+                        }
+                    ),
+                )
 
             request["result"] = result
             request["event"].set()
 
     def _handle_single_reserve_request(
         self, box_iri: str, source_module_iri: str, allow_override: bool = True
-    ) -> dict:
+    ) -> WorkflowResponse:
         """Handle one reserve request: wait until free, then call source convey."""
-        FC = "http://w3id.org/circularfactory/FlexConveyor#"
+        response_model = self.workflows["reserve"].response_model
+
         has_possession = IRI(f"{FC}hasPossession")
 
         timeout_seconds = 50
@@ -711,78 +506,95 @@ class FlexConveyor:
             self.logger.error(
                 f"Reserve timeout after {timeout_seconds}s for box {box_iri}"
             )
-            return {
-                "status": "timeout",
-                "module": str(self.module_id),
-                "box": str(box_iri),
-                "source_module": str(source_module_iri),
-                "reason": "Module did not become free within timeout period",
-            }
+            return response_model(
+                status_code=408,
+                status="timeout",
+                message=f"Module did not become free within {timeout_seconds}s timeout period",
+                content=json.dumps(
+                    {
+                        IRI(f"{FC}response_module").lined: str(self.module_id),
+                        IRI(f"{FC}response_box").lined: str(box_iri),
+                        IRI(f"{FC}response_source_module").lined: str(
+                            source_module_iri
+                        ),
+                    }
+                ),
+            )
 
         response = self.remote_workflows[IRI(source_module_iri)]["convey"](
-            ConveyPayload(
-                box_iri=box_iri,
-                destination_module_iri=str(self.module_id),
-            )
+            **{
+                IRI(f"{FC}refersToBox").lined: box_iri,
+                IRI(f"{FC}refersToDestinationModule").lined: str(self.module_id),
+            }
         )
 
-        if (
-            hasattr(response, "text")
-            and '"status":"ownership_transfer_failed"' in response.text
-            and allow_override
-        ):
-            self.logger.warning(
-                f"Convey-on-source failed due to ownership transfer, but concurrent guard override is enabled. Disabling guard to proceed with simulation."
-            )
-            return self._handle_single_reserve_request(
-                box_iri=box_iri,
-                source_module_iri=source_module_iri,
-                allow_override=False,
-            )
-
         if response.status_code >= 400:
+            if response.status == "ownership_transfer_failed" and allow_override:
+                self.logger.warning(
+                    f"Convey-on-source failed due to ownership transfer, but concurrent guard override is enabled. Disabling guard to proceed with simulation."
+                )
+                return self._handle_single_reserve_request(
+                    box_iri=box_iri,
+                    source_module_iri=source_module_iri,
+                    allow_override=False,
+                )
+
             self.logger.error(
                 f"Convey-on-source failed with HTTP {response.status_code}"
             )
-            return {
-                "status": "convey_request_failed",
-                "module": str(self.module_id),
-                "box": str(box_iri),
-                "source_module": str(source_module_iri),
-                "http_status": response.status_code,
-                "http_text": response.text,
-            }
+            return response_model(
+                status_code=500,
+                status="remote_convey_failed",
+                message=f"Remote convey call to source module failed",
+                content=json.dumps(
+                    {
+                        IRI(f"{FC}response_module").lined: str(self.module_id),
+                        IRI(f"{FC}response_box").lined: str(box_iri),
+                        IRI(f"{FC}response_source_module").lined: str(
+                            source_module_iri
+                        ),
+                        "remote_details": {
+                            "http_status": response.status_code,
+                            "remote_status": response.status,
+                            "remote_message": response.message,
+                        },
+                    }
+                ),
+            )
 
-        convey_result = response.json() if response.text else {}
+        convey_result = response.model_dump()
         self.logger.info(
             f"Convey-on-source from {source_module_iri} to {self.module_id} response: {convey_result}"
         )
-        return {
-            "status": "reserved_and_pulled",
-            "module": str(self.module_id),
-            "box": str(box_iri),
-            "source_module": str(source_module_iri),
-            "convey": convey_result,
-        }
+        return response_model(
+            status_code=200,
+            status="reserved_and_pulled",
+            message="Box reserved and pulled from source module successfully",
+            content=json.dumps(
+                {
+                    IRI(f"{FC}response_module").lined: str(self.module_id),
+                    IRI(f"{FC}response_box").lined: str(box_iri),
+                    IRI(f"{FC}response_source_module").lined: str(source_module_iri),
+                    "convey_details": convey_result,
+                }
+            ),
+        )
 
-    def convey(
+    @Service.workflow(workflow_class=IRI(f"{FC}ConveyWorkflow"), key="convey")
+    def convey_workflow(
         self,
-        box_iri: str,
-        destination_module_iri: str,
-    ) -> dict:
-        """Step 2: Convey - Executed on source module.
-
-        Source module performs the full ownership transfer:
-        remove ownership from source and assign ownership to destination,
-        then triggers destination module `receive` asynchronously.
-
-        Args:
-            box_iri: IRI of the parcel being transferred.
-            destination_module_iri: Destination module IRI.
-
-        Returns:
-            dict with removal and downstream receive status.
+        payload: WorkflowPayload,
+    ) -> WorkflowResponse:
         """
+        Implements http://w3id.org/circularfactory/FlexConveyor#ConveyWorkflow
+        """
+        box_iri: str = getattr(payload, IRI(f"{FC}refersToBox").lined)
+        destination_module_iri = getattr(
+            payload, IRI(f"{FC}refersToDestinationModule").lined
+        )
+
+        response_model = self.workflows["convey"].response_model
+
         if not self.remote_workflows:
             self._discover_remote_workflows()
 
@@ -795,18 +607,24 @@ class FlexConveyor:
 
         self.logger.info(f"Conveying box {box} to {destination_module}")
         try:
-            self.WMS_transfer_ownership(
+            self.transfer_box_ownership(
                 str(box), str(self.module_id), str(destination_module)
             )
         except Exception as e:
             self.logger.error(f"Convey ownership transfer failed: {e}")
-            return {
-                "status": "ownership_transfer_failed",
-                "module": str(self.module_id),
-                "box": str(box),
-                "destination_module": str(destination_module),
-                "reason": str(e),
-            }
+            return response_model(
+                status_code=500,
+                status="ownership_transfer_failed",
+                message="Failed to transfer box ownership in knowledge graph",
+                content=json.dumps(
+                    {
+                        IRI(f"{FC}response_box").lined: str(box),
+                        IRI(f"{FC}response_from_module").lined: str(self.module_id),
+                        IRI(f"{FC}response_to_module").lined: str(destination_module),
+                        "error": str(e),
+                    }
+                ),
+            )
 
         # Wait 1 second to simulate transit time
         self.logger.info(f"Waiting 5 seconds for transit...")
@@ -816,14 +634,10 @@ class FlexConveyor:
             try:
                 response = self.remote_workflows[IRI(destination_module_iri)][
                     "receive"
-                ](
-                    ReceivePayload(
-                        box_iri=box_iri,
-                    )
-                )
+                ](**{IRI(f"{FC}refersToBox").lined: box_iri})
                 if response.status_code >= 400:
                     self.logger.error(
-                        f"Background destination receive failed with HTTP {response.status_code}: {response.text}"
+                        f"Background destination receive failed: [{response.status_code}] {response.status} - {response.message}"
                     )
                 else:
                     self.logger.info("Background destination receive succeeded")
@@ -836,35 +650,35 @@ class FlexConveyor:
             name=f"ReceiveTrigger-{self.module_id}-to-{destination_module}",
         ).start()
 
-        return {
-            "status": "conveyed_receive_started",
-            "module": str(self.module_id),
-            "box": str(box),
-            "to_module": str(destination_module),
-            "receive": {"status": "started_async"},
-        }
+        return response_model(
+            status_code=200,
+            status="conveyed_receive_started",
+            message="Box conveyed successfully, receive workflow started",
+            content=json.dumps(
+                {
+                    IRI(f"{FC}response_box").lined: str(box),
+                    IRI(f"{FC}response_from_module").lined: str(self.module_id),
+                    IRI(f"{FC}response_to_module").lined: str(destination_module),
+                    IRI(f"{FC}response_receive_status").lined: "started_async",
+                }
+            ),
+        )
 
-    def receive(self, box_iri: str) -> dict:
-        """Step 3: Receive - Determine next hop and initiate reserve.
-
-        This workflow computes the shortest path to the destination using
-        Dijkstra and calls reserve on the next hop module.
-        Ownership transfer is handled fully by the convey workflow.
-
-        Args:
-            box_iri: IRI string of the box being received.
-            destination_iri: Optional IRI string of the destination module.
-
-        Returns:
-            dict describing the route and next hop reservation status.
+    @Service.workflow(workflow_class=IRI(f"{FC}ReceiveWorkflow"), key="receive")
+    def receive_workflow(self, payload: WorkflowPayload) -> WorkflowResponse:
         """
+        Implements http://w3id.org/circularfactory/FlexConveyor#ReceiveWorkflow
+        """
+        box_iri = IRI(getattr(payload, IRI(f"{FC}refersToBox").lined))
+
+        # Get the receive workflow to access its response_model
+        response_model = self.workflows["receive"].response_model
+
         if not self.remote_workflows:
             self._discover_remote_workflows()
 
         if not self.routing_table:
             self._populate_routing_table()
-
-        FC = "http://w3id.org/circularfactory/FlexConveyor#"
 
         box_property_chains = [
             [IRI(f"{FC}isPossessedBy")],
@@ -881,41 +695,63 @@ class FlexConveyor:
         self.logger.info(f"Receive: processing box {box_iri}")
 
         box_iri = box_instance.id
-        posessor_iri = getattr(box_instance, IRI(f"{FC}isPossessedBy").lined)[0].id
-        destination_iri = getattr(box_instance, IRI(f"{FC}hasDestination").lined)[0].id
-        state_iri = getattr(box_instance, IRI(f"{FC}hasState").lined)[0].id
+        posessor_iri = IRI(getattr(box_instance, IRI(f"{FC}isPossessedBy").lined)[0].id)
+        destination_iri = IRI(
+            getattr(box_instance, IRI(f"{FC}hasDestination").lined)[0].id
+        )
+        state_iri = IRI(getattr(box_instance, IRI(f"{FC}hasState").lined)[0].id)
 
         if not posessor_iri == self.module_id:
             self.logger.error(
                 f"Box {box_iri} is not possessed by this module. Current possessor: {posessor_iri}"
             )
-            return {
-                "status": "error",
-                "module": str(self.module_id),
-                "box": str(box_iri),
-                "reason": f"Box is possessed by {posessor_iri}, not {self.module_id}",
-            }
+            return response_model(
+                status_code=400,
+                status="wrong_possession",
+                message=f"Box is not possessed by this module",
+                content=json.dumps(
+                    {
+                        IRI(f"{FC}response_module").lined: str(self.module_id),
+                        IRI(f"{FC}response_box").lined: str(box_iri),
+                        "actual_possessor": str(posessor_iri),
+                    }
+                ),
+            )
 
         if not state_iri == IRI(f"{FC}InTransit"):
             self.logger.error(
                 f"Box {box_iri} is not in 'InTransit' state. Current state: {state_iri}"
             )
-            return {
-                "status": "error",
-                "module": str(self.module_id),
-                "box": str(box_iri),
-                "reason": f"Box is in state {state_iri}, expected 'InTransit'",
-            }
+            return response_model(
+                status_code=400,
+                status="invalid_state",
+                message=f"Box is not in InTransit state",
+                content=json.dumps(
+                    {
+                        IRI(f"{FC}response_module").lined: str(self.module_id),
+                        IRI(f"{FC}response_box").lined: str(box_iri),
+                        "actual_state": str(state_iri),
+                        "expected_state": f"{FC}InTransit",
+                    }
+                ),
+            )
 
         if destination_iri == self.module_id:
             # Transfer to WMS and call WMS's accept_box workflow
             self._deliver_to_wms(str(box_iri))
 
-            return {
-                "status": "delivered",
-                "module": str(self.module_id),
-                "box": str(box_iri),
-            }
+            return response_model(
+                status_code=200,
+                status="delivered",
+                message="Box delivered to final destination (WMS)",
+                content=json.dumps(
+                    {
+                        IRI(f"{FC}response_module").lined: str(self.module_id),
+                        IRI(f"{FC}response_box").lined: str(box_iri),
+                        IRI(f"{FC}response_action").lined: "delivered",
+                    }
+                ),
+            )
 
         next_hop = self.routing_table.get(destination_iri)
 
@@ -923,68 +759,82 @@ class FlexConveyor:
 
         # Step 1: Reserve
         response = self.remote_workflows[next_hop]["reserve"](
-            ReservePayload(
-                box_iri=box_iri,
-                source_module_iri=str(self.module_id),
-            )
+            **{
+                IRI(f"{FC}refersToBox").lined: box_iri,
+                IRI(f"{FC}refersToSourceModule").lined: str(self.module_id),
+            }
         )
 
         if response.status_code >= 400:
             self.logger.error(f"Reserve failed with HTTP {response.status_code}")
-            return {
-                "status": "reserve_failed",
-                "module": str(self.module_id),
-                "box": str(box_iri),
-                "destination": str(destination_iri),
-                "next_hop": next_hop,
-                "http_status": response.status_code,
-                "http_text": response.text,
-            }
-
-        reserve_result = response.json() if response.text else {}
-        if reserve_result.get("status") != "reserved_and_pulled":
-            self.logger.warning(
-                f"Transfer did not complete: {reserve_result.get('reason', 'unknown')}"
+            return response_model(
+                status_code=500,
+                status="remote_reserve_failed",
+                message="Remote reserve call to next hop failed",
+                content=json.dumps(
+                    {
+                        IRI(f"{FC}response_module").lined: str(self.module_id),
+                        IRI(f"{FC}response_box").lined: str(box_iri),
+                        IRI(f"{FC}response_destination").lined: str(destination_iri),
+                        IRI(f"{FC}response_next_hop").lined: next_hop,
+                        "remote_details": {
+                            "http_status": response.status_code,
+                            "remote_status": response.status,
+                            "remote_message": response.message,
+                        },
+                    }
+                ),
             )
-            return {
-                "status": "reserve_or_pull_failed",
-                "module": str(self.module_id),
-                "box": str(box_iri),
-                "destination": str(destination_iri),
-                "next_hop": next_hop,
-                "reserve_response": reserve_result,
-            }
+
+        # Parse the WorkflowResponse
+        reserve_status = response.status
+        if reserve_status != "reserved_and_pulled":
+            self.logger.warning(f"Transfer did not complete: {response.message}")
+            return response_model(
+                status_code=500,
+                status="reserve_or_pull_failed",
+                message="Reserve succeeded but pull operation failed",
+                content=json.dumps(
+                    {
+                        IRI(f"{FC}response_module").lined: str(self.module_id),
+                        IRI(f"{FC}response_box").lined: str(box_iri),
+                        IRI(f"{FC}response_destination").lined: str(destination_iri),
+                        IRI(f"{FC}response_next_hop").lined: next_hop,
+                        "reserve_response": response.model_dump(),
+                    }
+                ),
+            )
 
         self.logger.info(f"Pull-handshake transfer completed to {next_hop}")
 
-        return {
-            "status": "routed",
-            "module": str(self.module_id),
-            "box": str(box_iri),
-            "destination": str(destination_iri),
-            "next_hop": next_hop,
-        }
+        return response_model(
+            status_code=200,
+            status="routed",
+            message="Box routed to next hop successfully",
+            content=json.dumps(
+                {
+                    IRI(f"{FC}response_module").lined: str(self.module_id),
+                    IRI(f"{FC}response_box").lined: str(box_iri),
+                    IRI(f"{FC}response_action").lined: "routed",
+                    IRI(f"{FC}response_destination").lined: str(destination_iri),
+                    IRI(f"{FC}response_next_hop").lined: next_hop,
+                }
+            ),
+        )
 
-    def _deliver_to_wms(self, box_iri: str) -> dict:
+    def _deliver_to_wms(self, box_iri: str) -> None:
         """
         Deliver a box to the WMS by transferring ownership and calling WMS's accept_box workflow.
 
         Args:
             box_iri: IRI of the box to deliver
-
-        Returns:
-            Result dictionary from WMS's accept_box workflow
         """
-        from mock_wms.MockWMS import AcceptBoxPayload
-
-        FC = "http://w3id.org/circularfactory/FlexConveyor#"
-        INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
-        WMS_IRI = f"{INST}#WMS"
+        WMS_IRI = IRI("http://w3id.org/circularfactory/FlexConveyorInstances#WMS")
 
         # Call WMS's accept_box workflow
         try:
             # Transfer ownership from this module to WMS
-            self.WMS_transfer_ownership(
+            self.transfer_box_ownership(
                 box_iri,
                 str(self.module_id),
                 WMS_IRI,
@@ -993,32 +843,25 @@ class FlexConveyor:
             wms_accept_workflow = Workflow.fetch_remote_workflow(
                 resource_instance=IRI(WMS_IRI),
                 workflow_class=IRI(f"{FC}AcceptBoxWorkflow"),
-                payload_model=AcceptBoxPayload,
                 ogm=self.ogm,
             )
 
-            response = wms_accept_workflow(AcceptBoxPayload(box_iri=box_iri))
+            response = wms_accept_workflow(**{IRI(f"{FC}refersToBox").lined: box_iri})
 
             if response.status_code >= 400:
                 self.logger.error(
                     f"WMS accept_box workflow failed: {response.status_code}"
                 )
-                return {"status": "error", "error": f"HTTP {response.status_code}"}
-
-            result = response.json() if response.text else {}
-            self.logger.info(f"Box {box_iri} delivered to WMS!")
-            return result
+            else:
+                self.logger.info(f"Box {box_iri} delivered to WMS!")
 
         except Exception as e:
             self.logger.error(f"Error calling WMS accept_box workflow: {e}")
-            return {"status": "error", "error": str(e)}
 
-    def WMS_transfer_ownership(
+    def transfer_box_ownership(
         self, box: str, origin_module: str, destination_module: str
     ) -> None:
-        FC = "http://w3id.org/circularfactory/FlexConveyor#"
-        INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
-        named_graph = IRI(INST)
+        named_graph = self.named_graph
 
         has_possession = IRI(f"{FC}hasPossession")
         is_possessed_by = IRI(f"{FC}isPossessedBy")
@@ -1042,11 +885,3 @@ class FlexConveyor:
         self.logger.info(
             f"Box ownership transferred: {origin_module} → {destination_module}"
         )
-
-    def get_api_url(self) -> Optional[str]:
-        """Get the URL where this module's REST API is accessible."""
-        return self.url
-
-    def get_ogm(self) -> OGM:
-        """Get the OGM instance used by this module."""
-        return self.ogm

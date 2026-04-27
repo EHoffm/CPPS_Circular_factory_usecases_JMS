@@ -6,36 +6,28 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix sp_ins: <> .
+@prefix wf: <http://w3id.org/circularfactory/Workflow#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 #################################################################
 # Ontology
 #################################################################
 
-: rdf:type owl:Ontology .
-
-#################################################################
-# M2
-#################################################################
-
-:Workflow rdf:type owl:Class .
-
-:hasWorkflow rdf:type owl:ObjectProperty ;
-    rdfs:domain cfc:Resource ;
-    rdfs:range :Workflow ;
-    owl:inverseOf :isWorkflowOf .
-
-:isWorkflowOf rdf:type owl:ObjectProperty ;
-    owl:inverseOf :hasWorkflow ;
-    rdfs:domain :Workflow ;
-    rdfs:range cfc:Resource .
+: rdf:type owl:Ontology ;
+    owl:imports <http://w3id.org/circularfactory/Workflow> ;
+    rdfs:label "FlexConveyor System Ontology" ;
+    rdfs:comment "Domain ontology for the FlexConveyor material handling system" .
 
 #################################################################
 # Classes
 #################################################################
 
 :FlexConveyorModule rdf:type owl:Class ;
-    rdfs:subClassOf cfc:Resource .
+    rdfs:subClassOf cfc:Resource ;
+    wf:hasWorkflow
+        :ReceiveWorkflow ,
+        :ReserveWorkflow ,
+        :ConveyWorkflow .
 
 :EntryModule rdf:type owl:Class ;
     rdfs:subClassOf :FlexConveyorModule .
@@ -44,43 +36,160 @@
     rdfs:subClassOf :FlexConveyorModule .
 
 :WarehouseManagementSystem rdf:type owl:Class ;
-    rdfs:subClassOf cfc:Resource .
+    rdfs:subClassOf cfc:Resource ;
+    wf:hasWorkflow
+        :SpawnBoxWorkflow ,
+        :AcceptBoxWorkflow .
 
 :Box rdf:type owl:Class .
 
 :Connection rdf:type owl:Class .
 
-:SpawnBoxWorkflow rdf:type owl:Class ;
-    rdfs:subClassOf :Workflow .
+#################################################################
+# Payload Structure Definitions (Blank Nodes)
+#################################################################
 
-:AcceptBoxWorkflow rdf:type owl:Class ;
-    rdfs:subClassOf :Workflow .
+# Payload structures defined as labeled blank nodes with restrictions
+
+_:ReservePayload a owl:Class ;
+    owl:intersectionOf (
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToBox ;
+            owl:hasValue :Box
+        ]
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToSourceModule ;
+            owl:hasValue :FlexConveyorModule
+        ]
+    ) .
+
+_:ConveyPayload a owl:Class ;
+    owl:intersectionOf (
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToBox ;
+            owl:hasValue :Box
+        ]
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToDestinationModule ;
+            owl:hasValue :FlexConveyorModule
+        ]
+    ) .
+
+_:ReceivePayload a owl:Class ;
+    owl:intersectionOf (
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToBox ;
+            owl:hasValue :Box
+        ]
+    ) .
+
+_:SpawnBoxPayload a owl:Class ;
+    owl:intersectionOf (
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToBox ;
+            owl:hasValue :Box
+        ]
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToOriginModule ;
+            owl:hasValue :FlexConveyorModule
+        ]
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToDestinationModule ;
+            owl:hasValue :FlexConveyorModule
+        ]
+    ) .
+
+_:AcceptBoxPayload a owl:Class ;
+    owl:intersectionOf (
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToBox ;
+            owl:hasValue :Box
+        ]
+    ) .
+
+#################################################################
+# Response Structure Classes
+#################################################################
+
+:ReserveResponse rdf:type owl:Class ;
+    rdfs:subClassOf wf:WorkflowResponse .
+
+:ConveyResponse rdf:type owl:Class ;
+    rdfs:subClassOf wf:WorkflowResponse .
+
+:ReceiveResponse rdf:type owl:Class ;
+    rdfs:subClassOf wf:WorkflowResponse .
+
+:SpawnBoxResponse rdf:type owl:Class ;
+    rdfs:subClassOf wf:WorkflowResponse .
+
+:AcceptBoxResponse rdf:type owl:Class ;
+    rdfs:subClassOf wf:WorkflowResponse .
+
+#################################################################
+# Workflow Classes
+#################################################################
 
 :ReserveWorkflow rdf:type owl:Class ;
-    rdfs:subClassOf :Workflow .
+    rdfs:subClassOf wf:Workflow ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty wf:accepts ;
+        owl:hasValue _:ReservePayload
+    ] .
 
 :ConveyWorkflow rdf:type owl:Class ;
-    rdfs:subClassOf :Workflow .
+    rdfs:subClassOf wf:Workflow ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty wf:accepts ;
+        owl:hasValue _:ConveyPayload
+    ] .
 
 :ReceiveWorkflow rdf:type owl:Class ;
-    rdfs:subClassOf :Workflow .
+    rdfs:subClassOf wf:Workflow ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty wf:accepts ;
+        owl:hasValue _:ReceivePayload
+    ] .
+
+:SpawnBoxWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf wf:Workflow ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty wf:accepts ;
+        owl:hasValue _:SpawnBoxPayload
+    ] .
+
+:AcceptBoxWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf wf:Workflow ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty wf:accepts ;
+        owl:hasValue _:AcceptBoxPayload
+    ] .
+
+#################################################################
+# Other Domain-Specific Classes
+#################################################################
 
 :BoxState rdf:type owl:Class .
 
-:Created rdf:type :BoxState ,
-    owl:NamedIndividual .
-
-:InTransit rdf:type :BoxState ,
-    owl:NamedIndividual .
-
-:Delivered rdf:type :BoxState ,
-    owl:NamedIndividual .
+:Created rdf:type owl:NamedIndividual, :BoxState .
+:InTransit rdf:type owl:NamedIndividual, :BoxState .
+:Delivered rdf:type owl:NamedIndividual, :BoxState .
 
 :Direction rdf:type owl:Class .
-
-#################################################################
-# Individuals (Directions)
-#################################################################
 
 :North rdf:type owl:NamedIndividual , :Direction .
 :South rdf:type owl:NamedIndividual , :Direction .
@@ -141,10 +250,42 @@
     rdfs:domain :FlexConveyorModule ;
     rdfs:range xsd:integer .
 
-:accessibleAt rdf:type owl:DatatypeProperty ;
-    rdfs:domain :Workflow ;
-    rdfs:range xsd:anyURI .
+#################################################################
+# Payload Field Properties
+#################################################################
 
+:refersToBox rdf:type owl:ObjectProperty ;
+    rdfs:domain [
+        a owl:Restriction ;
+        owl:hasValue wf:Workflow ;
+        owl:onProperty [ owl:inverseOf wf:accepts ]
+    ] ;
+    rdfs:range :Box ;
+    rdfs:comment "References a box in workflow payloads" .
 
+:refersToSourceModule rdf:type owl:ObjectProperty ;
+    rdfs:domain [
+        a owl:Restriction ;
+        owl:hasValue wf:Workflow ;
+        owl:onProperty [ owl:inverseOf wf:accepts ]
+    ] ;
+    rdfs:range :FlexConveyorModule ;
+    rdfs:comment "References the source module in workflow payloads" .
 
+:refersToDestinationModule rdf:type owl:ObjectProperty ;
+    rdfs:domain [
+        a owl:Restriction ;
+        owl:hasValue wf:Workflow ;
+        owl:onProperty [ owl:inverseOf wf:accepts ]
+    ] ;
+    rdfs:range :FlexConveyorModule ;
+    rdfs:comment "References the destination module in workflow payloads" .
 
+:refersToOriginModule rdf:type owl:ObjectProperty ;
+    rdfs:domain [
+        a owl:Restriction ;
+        owl:hasValue wf:Workflow ;
+        owl:onProperty [ owl:inverseOf wf:accepts ]
+    ] ;
+    rdfs:range :FlexConveyorModule ;
+    rdfs:comment "References the origin module for box spawning" .

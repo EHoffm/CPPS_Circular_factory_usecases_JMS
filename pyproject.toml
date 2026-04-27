@@ -23,11 +23,16 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-packages = [{include = "Usecase_FlexConveyor_decentral"}]
+packages = [
+    {include = "Service"},
+    {include = "Usecase_Demo_Calculator"},
+    {include = "Usecase_FlexConveyor_decentral"},
+    {include = "Usecase_Vertical_integration"},
+]
 
 [tool.poetry.dependencies]
 python = "^3.13"
-streamlit = "^1.56.0"
+streamlit = "^1.55.0"
 streamlit-autorefresh = "^1.0.1"
 matplotlib = "^3.10.8"
 graph_db_interface = { git = "https://github.com/SAWeindel/graph_db_interface.git", rev = "dd2b39baa60cb43c11338d196d998404a555707a" }

@@ -639,6 +639,9 @@ def initialize_flex_instance_session_state():
     if "wms_instantiation_requested" not in st.session_state:
         st.session_state.wms_instantiation_requested = False
 
+    if "wms_spawn_box_requested" not in st.session_state:
+        st.session_state.wms_spawn_box_requested = False
+
 
 def render_flex_module_instantiation(ogm: OGM):
     """
@@ -861,7 +864,7 @@ def render_flex_module_instantiation(ogm: OGM):
             st.session_state.flexconveyor_concurrent_guard_override = concurrent_guard
 
         st.divider()
-        col_inst1, col_inst2 = st.columns([1, 1])
+        col_inst1, col_inst2, col_inst3 = st.columns([1, 1, 1])
         with col_inst1:
             if st.button(
                 "⚡ Instantiate Modules & WMS", width="stretch", type="primary"
@@ -879,6 +882,11 @@ def render_flex_module_instantiation(ogm: OGM):
             if st.button("🏭 Instantiate WMS", width="stretch", type="secondary"):
                 # Set flag to trigger WMS instantiation
                 st.session_state.wms_instantiation_requested = True
+                st.rerun()
+
+        with col_inst3:
+            if st.button("📦 Spawn Box", width="stretch", type="secondary"):
+                st.session_state.wms_spawn_box_requested = True
                 st.rerun()
 
     # Show form if blank instance was created or editing

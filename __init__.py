@@ -5,11 +5,23 @@ A Python package for managing and visualizing FlexConveyor systems,
 with GraphDB integration and Streamlit web interface.
 """
 
-__version__ = "0.1.0"
-__author__ = "Your Name"
-__email__ = "your.email@example.com"
+from Usecase_FlexConveyor_decentral.src.FlexConveyor_Module.FlexConveyorModule import (
+    FlexConveyor,
+)
+from Usecase_FlexConveyor_decentral.src.Mock_WMS.MockWMS import MockWMS
 
-# Import main classes for easy access
-from .src.flexconveyor_system import FlexConveyorSystem
+from Service.Workflow import (
+    Workflow,
+    WorkflowPayload,
+    WorkflowResponse,
+)
+from Service.Service import Service
 
-__all__ = ["FlexConveyorSystem"]
+__all__ = [
+    "FlexConveyor",
+    "Workflow",
+    "WorkflowPayload",
+    "WorkflowResponse",
+    "MockWMS",
+    "Service",
+]

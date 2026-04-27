@@ -100,19 +100,17 @@ def discover_modules(ogm: OGM) -> list[dict[str, str | None]]:
         print("No instantiated modules found")
         return discovered
 
-    has_workflow_key = IRI(
-        "http://w3id.org/circularfactory/FlexConveyor#hasWorkflow"
-    ).lined
+    has_workflow_key = IRI("http://w3id.org/circularfactory/Workflow#hasWorkflow").lined
     accessible_at_key = IRI(
-        "http://w3id.org/circularfactory/FlexConveyor#accessibleAt"
+        "http://w3id.org/circularfactory/Workflow#accessibleAt"
     ).lined
 
     for module in modules:
         print(f"Discovered module: {module}")
         prop_chains = [
             [
-                IRI("http://w3id.org/circularfactory/FlexConveyor#hasWorkflow"),
-                IRI("http://w3id.org/circularfactory/FlexConveyor#accessibleAt"),
+                IRI("http://w3id.org/circularfactory/Workflow#hasWorkflow"),
+                IRI("http://w3id.org/circularfactory/Workflow#accessibleAt"),
             ],
             [
                 IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),

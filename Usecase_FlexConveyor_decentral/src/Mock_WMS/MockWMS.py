@@ -6,33 +6,26 @@ The WMS is responsible for:
 - Automatically spawning new boxes after initialization and after each delivery
 """
 
+import json
 import logging
 import threading
 import time
 from typing import Optional, Dict, Any, List
 import random
-import uvicorn
-import semantic_middleware as smw
+
 from graph_db_interface.utils.iri import IRI
 from pydantic import BaseModel
 
 from kapps_ogm import OGM, ClassScope
 
-# Absolute import - src directory is added to sys.path by bootstrap
-from FlexConveyor_Module.Workflow import Workflow
+# Absolute import - works whether run as script or installed package
+from Service.Workflow import Workflow, WorkflowPayload, WorkflowResponse
+from Service.Service import Service
+
+FC = "http://w3id.org/circularfactory/FlexConveyor#"
 
 
-class SpawnBoxPayload(BaseModel):
-    box_iri: str
-    origin_iri: str
-    destination_iri: str
-
-
-class AcceptBoxPayload(BaseModel):
-    box_iri: str
-
-
-class MockWMS:
+class MockWMS(Service):
     """
     Mock Warehouse Management System entity.
 
@@ -45,203 +38,39 @@ class MockWMS:
     - Every time a box is accepted
     """
 
-    # Class-level port counter (share with FlexConveyor)
-    _port_counter = 9000
-    _port_lock = threading.Lock()
-
-    @classmethod
-    def _get_next_port(cls) -> int:
-        """Thread-safe port assignment."""
-        with cls._port_lock:
-            cls._port_counter += 1
-            return cls._port_counter
+    NAMED_GRAPH = IRI("http://w3id.org/circularfactory/FlexConveyorInstances")
+    _WMS_SERVICE_ID = IRI("http://w3id.org/circularfactory/FlexConveyorInstances#WMS")
 
     def __init__(
-        self, ogm: OGM, number_of_boxes: Optional[int] = 1, host: str = "0.0.0.0"
+        self,
+        ogm: OGM,
+        number_of_boxes: Optional[int] = 1,
+        host: str = "0.0.0.0",
     ):
-        """Initialize the WMS workflow."""
+        """Initialize the WMS."""
         if ogm is None:
             raise ValueError("OGM instance is required to initialize MockWMS")
 
-        self.wms_id = IRI("http://w3id.org/circularfactory/FlexConveyorInstances#WMS")
-        self.ogm = ogm
-        self.mw = smw.Middleware()
-        self.host = host
-        self.port = self._get_next_port()
-        self.url: Optional[str] = None
-        self.server_thread: Optional[threading.Thread] = None
-        self.server: Optional[uvicorn.Server] = None
-        self.running = False
-        self.workflows: set[Workflow] = set()
         self.box_counter = 0
         self.box_counter_lock = threading.Lock()
-        self.spawn_after_accept = True  # Auto-spawn boxes after acceptance
+        self.spawn_after_accept = True
         self.initialized = False
-
         self.number_of_boxes: int = number_of_boxes
 
-        self.logger_parent = logging.getLogger("MockWMS")
-        self.logger = self.logger_parent.getChild("SubProjectLogic")
+        super().__init__(service_id=self._WMS_SERVICE_ID, ogm=ogm, host=host)
 
-        # Setup middleware data model (minimal, just for workflow registration)
-        data_model = smw.DataModel()
-        self.mw.load_data_model(
-            name=str(self.wms_id),
-            data_model=data_model,
-            persist_instances=False,
-        )
+    @property
+    def wms_id(self) -> IRI:
+        """Alias for service_id, preserving the original interface."""
+        return self.service_id
 
-        # Register workflows
-        def spawn_box(payload: SpawnBoxPayload) -> dict:
-            """Spawn a box into the system."""
-            logger = self.logger_parent.getChild("SpawnBoxWorkflow")
-            logger.info(f"Invoked with payload: {payload}")
-            response = self._spawn_box_workflow(
-                box_iri=payload.box_iri,
-                origin_iri=payload.origin_iri,
-                destination_iri=payload.destination_iri,
-            )
-            logger.info(f"Completed with response: {response}")
-            return response
-
-        def accept_box(payload: AcceptBoxPayload) -> dict:
-            """Accept a delivered box."""
-            logger = self.logger_parent.getChild("AcceptBoxWorkflow")
-            logger.info(f"Invoked with payload: {payload}")
-            response = self._accept_box_workflow(box_iri=payload.box_iri)
-            logger.info(f"Completed with response: {response}")
-            return response
-
-        # Create and register workflows
-        self.workflows.add(
-            Workflow(
-                workflow_method=spawn_box,
-                workflow_class=IRI(
-                    "http://w3id.org/circularfactory/FlexConveyor#SpawnBoxWorkflow"
-                ),
-                resource_instance=self.wms_id,
-                payload_model=SpawnBoxPayload,
-                logger=self.logger_parent.getChild("SpawnBoxWorkflow"),
-            )
-        )
-
-        self.workflows.add(
-            Workflow(
-                workflow_method=accept_box,
-                workflow_class=IRI(
-                    "http://w3id.org/circularfactory/FlexConveyor#AcceptBoxWorkflow"
-                ),
-                resource_instance=self.wms_id,
-                payload_model=AcceptBoxPayload,
-                logger=self.logger_parent.getChild("AcceptBoxWorkflow"),
-            )
-        )
-
-        # Register workflows in middleware
-        for workflow in self.workflows:
-            workflow.register_in_middleware(self.mw)
-
-        self.logger.info(f"Initialization complete")
-
-    def start(self):
-        """Start the REST API server in a background thread."""
-        if self.running:
-            self.logger.warning(f"WMS is already running at {self.url}")
-            return
-
-        self.running = True
-        self.server_thread = threading.Thread(
-            target=self._run_server, daemon=False, name="MockWMS"
-        )
-        self.server_thread.start()
-
-        # Give server time to start
-        time.sleep(1)
-
-        # Construct accessible URL
-        if self.host == "0.0.0.0":
-            import socket
-
-            hostname = socket.gethostname()
-            self.url = f"http://{hostname}:{self.port}"
-        else:
-            self.url = f"http://{self.host}:{self.port}"
-
-        # Register workflows in knowledge graph
-        for workflow in self.workflows:
-            workflow.register_in_graph_db(
-                host_url=self.url,
-                ogm=self.ogm,
-                named_graph=IRI(
-                    "http://w3id.org/circularfactory/FlexConveyorInstances"
-                ),
-            )
-
-        self.logger.info(
-            f"\n{'='*70}\n"
-            f"  MockWMS REST API Started\n"
-            f"  Module ID:     {self.wms_id}\n"
-            f"  Accessible at: {self.url}\n"
-            f"  GUI access:    http://localhost:{self.port}/docs\n"
-            f"  Workflows:      {', '.join(s.name for s in self.workflows)}\n"
-            f"{'='*70}"
-        )
-
-        # Spawn initial box after a short delay (let modules stabilize)
+    def on_start(self) -> None:
+        """Spawn the initial batch of boxes after the server is ready."""
         if self.spawn_after_accept:
             threading.Thread(
                 target=self._spawn_initial_boxes, daemon=True, name="InitialBoxSpawn"
             ).start()
-
         self.initialized = True
-
-    def _run_server(self):
-        """Run the uvicorn server for this middleware instance."""
-        config = uvicorn.Config(
-            app=self.mw.app,
-            host=self.host,
-            port=self.port,
-            log_level="info",
-        )
-        self.server = uvicorn.Server(config)
-        try:
-            self.server.run()
-        except Exception as e:
-            self.logger.error(f"WMS server error: {e}")
-        finally:
-            self.running = False
-
-    def stop(self):
-        """Stop the REST API server."""
-        if not self.running:
-            self.logger.warning(f"WMS is not running")
-            self._cleanup_workflows_in_knowledge_graph()
-            return
-
-        self.running = False
-        if self.server is not None:
-            self.server.should_exit = True
-        if self.server_thread:
-            self.server_thread.join(timeout=10)
-            if self.server_thread.is_alive() and self.server is not None:
-                self.server.force_exit = True
-                self.server_thread.join(timeout=2)
-
-        self._cleanup_workflows_in_knowledge_graph()
-        self.logger.info(f"MockWMS stopped")
-
-    def _cleanup_workflows_in_knowledge_graph(self):
-        """Remove workflow registrations from the knowledge graph."""
-        for workflow in self.workflows:
-            try:
-                workflow.deregister_in_graph_db(
-                    ogm=self.ogm,
-                    named_graph=IRI(
-                        "http://w3id.org/circularfactory/FlexConveyorInstances"
-                    ),
-                )
-            except Exception as e:
-                self.logger.warning(f"Error cleaning workflow {workflow.name}: {e}")
 
     def _get_next_box_iri(self) -> str:
         """Generate a unique box IRI."""
@@ -260,7 +89,6 @@ class MockWMS:
             - 'exit_modules': ExitModule instances
             - 'free_modules': Modules without hasPossession
         """
-        FC = "http://w3id.org/circularfactory/FlexConveyor#"
         INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
 
         query = f"""
@@ -407,16 +235,24 @@ class MockWMS:
         )
 
         # Execute spawn workflow
-        result = self._spawn_box_workflow(box_iri, origin_iri, destination_iri)
+        spawn_workflow = self.workflows["spawn"]
 
-        if result.get("status") == "spawned":
+        result = spawn_workflow(
+            **{
+                IRI(f"{FC}refersToBox").lined: box_iri,
+                IRI(f"{FC}refersToOriginModule").lined: origin_iri,
+                IRI(f"{FC}refersToDestinationModule").lined: destination_iri,
+            }
+        )
+
+        # Parse WorkflowResponse
+        if result.status == "spawned":
             self.logger.info(f"Box spawned successfully")
         else:
-            self.logger.error(f"Spawn failed: {result.get('error')}")
+            self.logger.error(f"Spawn failed: {result.message}")
 
-    def _spawn_box_workflow(
-        self, box_iri: str, origin_iri: str, destination_iri: str
-    ) -> dict:
+    @Service.workflow(workflow_class=IRI(f"{FC}SpawnBoxWorkflow"), key="spawn")
+    def spawn_box_workflow(self, payload: WorkflowPayload) -> WorkflowResponse:
         """
         Spawn box workflow: Create box and inject into origin module.
 
@@ -428,31 +264,25 @@ class MockWMS:
         5. Transfer ownership to origin module (set hasPossession/isPossessedBy)
         6. Call origin module's receive workflow
         """
-        from FlexConveyor_Module.FlexConveyorModule import ReceivePayload
+        named_graph = self.named_graph
+        box_iri = IRI(getattr(payload, IRI(f"{FC}refersToBox").lined))
+        origin_iri = IRI(getattr(payload, IRI(f"{FC}refersToOriginModule").lined))
+        destination_iri = IRI(
+            getattr(payload, IRI(f"{FC}refersToDestinationModule").lined)
+        )
 
-        FC = "http://w3id.org/circularfactory/FlexConveyor#"
-        INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
-        named_graph = IRI(INST)
+        # Get the spawn workflow to access its response_model
+        response_model: WorkflowResponse = self.workflows["spawn"].response_model
 
         try:
-            box = IRI(box_iri)
-            origin = IRI(origin_iri)
-            destination = IRI(destination_iri)
-
-            box_scope = ClassScope.from_property_chains(
-                [
-                    [IRI(f"{FC}hasState")],
-                    [IRI(f"{FC}hasOrigin")],
-                    [IRI(f"{FC}hasDestination")],
-                ]
-            )
             box_data = {
-                "id": box,
+                "id": box_iri,
                 IRI(f"{FC}hasState"): [{"id": IRI(f"{FC}InTransit")}],
-                IRI(f"{FC}hasOrigin"): [{"id": origin}],
-                IRI(f"{FC}hasDestination"): [{"id": destination}],
+                IRI(f"{FC}hasOrigin"): [{"id": origin_iri}],
+                IRI(f"{FC}hasDestination"): [{"id": destination_iri}],
             }
-            box_node = self.ogm.create(
+            box_scope = ClassScope.from_data_dict(box_data)
+            self.ogm.create(
                 class_iri=IRI(f"{FC}Box"),
                 class_scope=box_scope,
                 data=box_data,
@@ -463,8 +293,8 @@ class MockWMS:
             # Set ownership to origin module
             self.ogm.db.triples_add(
                 [
-                    (origin, IRI(f"{FC}hasPossession"), box),
-                    (box, IRI(f"{FC}isPossessedBy"), origin),
+                    (origin_iri, IRI(f"{FC}hasPossession"), box_iri),
+                    (box_iri, IRI(f"{FC}isPossessedBy"), origin_iri),
                 ],
                 check_exist=False,
                 named_graph=named_graph,
@@ -472,29 +302,40 @@ class MockWMS:
 
             # Call origin module's receive workflow
             receive_workflow = Workflow.fetch_remote_workflow(
-                resource_instance=origin,
+                resource_instance=origin_iri,
                 workflow_class=IRI(f"{FC}ReceiveWorkflow"),
-                payload_model=ReceivePayload,
                 ogm=self.ogm,
                 logger=self.logger_parent.getChild(
-                    f"RemoteWorkflow@{origin.fragment}-ReceiveWorkflow"
+                    f"RemoteWorkflow@{origin_iri.fragment}-ReceiveWorkflow"
                 ),
             )
 
-            response = receive_workflow(ReceivePayload(box_iri=box_iri))
+            response = receive_workflow(**{IRI(f"{FC}refersToBox").lined: box_iri})
 
-            return {
-                "status": "spawned",
-                "box": box_iri,
-                "origin": origin_iri,
-                "destination": destination_iri,
-                "receive_response": response.json() if response.text else {},
-            }
+            return response_model(
+                status_code=200,
+                status="spawned",
+                message="Box spawned and injected into origin module successfully",
+                content=json.dumps(
+                    {
+                        IRI(f"{FC}response_box").lined: box_iri,
+                        IRI(f"{FC}response_origin").lined: origin_iri,
+                        IRI(f"{FC}response_destination").lined: destination_iri,
+                        "receive_response": response.model_dump(),
+                    }
+                ),
+            )
 
         except Exception as e:
-            return {"status": "error", "error": str(e)}
+            return response_model(
+                status_code=500,
+                status="spawn_failed",
+                message=f"Failed to spawn box: {str(e)}",
+                content=json.dumps({"error": str(e)}),
+            )
 
-    def _accept_box_workflow(self, box_iri: str) -> dict:
+    @Service.workflow(workflow_class=IRI(f"{FC}AcceptBoxWorkflow"), key="accept")
+    def accept_box_workflow(self, payload: WorkflowPayload) -> WorkflowResponse:
         """
         Accept box workflow: Mark box as delivered and remove from system.
 
@@ -504,12 +345,12 @@ class MockWMS:
         3. Remove ownership triples (hasPossession/isPossessedBy)
         4. Trigger auto-spawn if enabled
         """
-        FC = "http://w3id.org/circularfactory/FlexConveyor#"
-        INST = "http://w3id.org/circularfactory/FlexConveyorInstances"
-        named_graph = IRI(INST)
+        named_graph = self.named_graph
+
+        response_model = self.workflows["accept"].response_model
 
         try:
-            box = IRI(box_iri)
+            box_iri = IRI(getattr(payload, IRI(f"{FC}refersToBox").lined))
             wms = self.wms_id
 
             has_state = IRI(f"{FC}hasState")
@@ -519,23 +360,30 @@ class MockWMS:
             in_transit = IRI(f"{FC}InTransit")
 
             # Verify ownership
-            possession_check = self.ogm.db.triples_get(sub=box, pred=is_possessed_by)
+            possession_check = self.ogm.db.triples_get(
+                sub=box_iri, pred=is_possessed_by
+            )
             if not possession_check or str(possession_check[0][2]) != str(wms):
-                return {
-                    "status": "error",
-                    "error": f"Box {box_iri} is not possessed by WMS",
-                }
+                return response_model(
+                    status_code=400,
+                    status="not_possessed_by_wms",
+                    message="Box is not possessed by WMS",
+                    content=json.dumps({IRI(f"{FC}response_box").lined: box_iri}),
+                )
 
             # Update state to Delivered
             state_updated = self.ogm.db.triple_update(
-                old_triple=(box, has_state, in_transit),
-                new_triple=(box, has_state, delivered),
+                old_triple=(box_iri, has_state, in_transit),
+                new_triple=(box_iri, has_state, delivered),
                 named_graph=named_graph,
             )
 
             # Remove ownership
             self.ogm.db.triples_delete(
-                [(wms, has_possession, box), (box, is_possessed_by, wms)],
+                [
+                    (wms, has_possession, box_iri),
+                    (box_iri, is_possessed_by, wms),
+                ],
                 check_exist=False,
                 named_graph=named_graph,
             )
@@ -548,11 +396,19 @@ class MockWMS:
                     target=self._spawn_random_box, daemon=True, name="AutoSpawn"
                 ).start()
 
-            return {"status": "accepted", "box": box_iri}
+            return response_model(
+                status_code=200,
+                status="accepted",
+                message="Box accepted and marked as delivered",
+                content=json.dumps({IRI(f"{FC}response_box").lined: box_iri}),
+            )
 
         except Exception as e:
-            return {"status": "error", "error": str(e)}
-
-    def get_api_url(self) -> Optional[str]:
-        """Get the API URL for this WMS instance."""
-        return self.url
+            return response_model(
+                status_code=500,
+                status="accept_failed",
+                message=f"Failed to accept box: {str(e)}",
+                content=json.dumps(
+                    {IRI(f"{FC}response_box").lined: box_iri, "error": str(e)}
+                ),
+            )
