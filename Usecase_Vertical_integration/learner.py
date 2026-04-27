@@ -1,4 +1,5 @@
 from graph_db_interface import IRI, GraphDB, GraphDBCredentials
+from kapps_ogm.utils.class_scope import ClassScope
 from kapps_ogm.ogm import OGM
 import json
 
@@ -21,8 +22,6 @@ class Learner:
                 obj=IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#Screw"),
             )
         ]
-
-        print(f"Found screws in the graph: {self.screws}")
         self.prop_chains = [
             [
                 IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasScrew"),
@@ -96,37 +95,26 @@ class Learner:
         iris = [
             s
             for s, p, o in self.ogm.db.triples_get(
-                pred=IRI("https://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
+                pred=IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
                 obj=IRI(
                     "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation"
                 ),
-                named_graph=named_graph_iri,
             )
         ]
         print(f"Found {len(iris)} unscrewing operation instances for learning.")
         print(iris)
 
-        # Direkte SPARQL-Query
-        query = """
-        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        PREFIX demo: <https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#>
-        SELECT ?s
-        WHERE {
-            GRAPH <http://w3id.org/circularfactory/UsecaseVerticalIntegrationInstances> { 
-                ?s rdf:type demo:UnscrewingOperation .
-            }
-        }
-        """
-        result = self.ogm.db.query(query)
-        print("SPARQL-Result:", result)
-
         for iri in iris:
             print(f"Fetching data for IRI: {iri}")
             try:
-                fetch_result = self.ogm.fetch(self.prop_chains, instance_iri=iri)
-                print(f"Fetch result: {fetch_result}")
-                instance_data = fetch_result.instance.model_dump(materialize=True)
-                print(f"Instance data: {instance_data}")
+                fetch_result = self.ogm.fetch(
+                    class_scope=ClassScope.from_property_chains(self.prop_chains),
+                    instance_iri=iri,
+                )
+                pydantic_model = fetch_result.materialize(reload=True)  # type: ignore
+                instance_data = pydantic_model.model_dump()
+                print(f"Instance data: ")
+                print(json.dumps(instance_data, indent=2))
                 self.process_desriptions.append(instance_data)
                 print(f"Appended data for {iri}")
             except Exception as e:
@@ -174,4 +162,4 @@ class Learner:
 
     def update_screwing_process_parameters(self, process_iri: IRI, parameters: dict):
         """updates the screwing process parameters in the graphdb with the learned parameters"""
-        self.ogm.commit(instance_iri=process_iri, data=parameters)  # type: ignore #Todo für Etienne in KW 4
+        self.ogm.commit(instance_iri=process_iri, data=parameters, named_graph=IRI("http://w3id.org/circularfactory/UsecaseVerticalIntegrationInstances"))  # type: ignore #Todo für Etienne in KW 4

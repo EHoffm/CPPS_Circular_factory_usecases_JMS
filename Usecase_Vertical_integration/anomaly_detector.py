@@ -86,10 +86,7 @@ class AnomalyDetector:
             class_scope=class_scope,
             instance_iri=instance_iri,
         )
-        print("Fetched instance for anomaly detection:")
-        print(
-            fetched_instance
-        )  # This will print the raw fetched instance, which may include nested structures and IRIs
+
         pydantic_model = fetched_instance.materialize(reload=True)  # type: ignore
         serialized = pydantic_model.model_dump()
         print("Fetched data for anomaly detection:")
@@ -134,11 +131,6 @@ class AnomalyDetector:
         ][
             0
         ]  # double; The position along the screw axis when approaching the screw
-        print(f"lower tightening torque: {lower_tightening_torque}")
-        print(f"upper dynamic losening torque: {hasUpperDynamicLoseningTorque}")
-        print(f"lower axial force: {hasLowerAxialForce}")
-        print(f"position on approach: {hasPositionOnApproach}")
-        print(f"axial force approach: {hasAxialForceApproach}")
 
         # TODO: entweder Vergleichswerte der Schraube oder success_process Daten anpassen
         # für den moment hier die Vergleichswerte der Schraube nur für diese Funktion angepasst
@@ -289,13 +281,6 @@ class AnomalyDetector:
         data[
             f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus').lined}"
         ] = [status]
-
-        print(
-            "Detected unscrewing status:",
-            data[
-                f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus').lined}"
-            ][0],
-        )
 
         return data
 
