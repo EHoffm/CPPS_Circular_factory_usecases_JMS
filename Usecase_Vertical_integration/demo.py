@@ -104,6 +104,11 @@ def main():
             "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation2"
         ),
     )
+    # get from UnscrewingOperation to the ScrewingResource long and short property chain
+    anomaly_detector.fetch_process_model(
+        IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#UnscrewingOperation2")
+    )
+
     # late at night, the learner awakes. he picks one specific screw type and learns from all process descriptions
     learner.get_all_process_descriptions()
     learner.learn_from_process_descriptions()

@@ -85,7 +85,7 @@ class AnomalyDetector:
         fetched_instance = self.ogm.fetch(
             class_scope=class_scope,
             instance_iri=instance_iri,
-        )
+        )  # gives back node
 
         pydantic_model = fetched_instance.materialize(reload=True)  # type: ignore
         serialized = pydantic_model.model_dump()
@@ -166,10 +166,6 @@ class AnomalyDetector:
         unscrewing_torque_time_series = json.loads(unscrewing_torque_time_series_string)
         axial_force_time_series = json.loads(axial_force_time_series_string)
         approach_position_time_series = json.loads(approach_position_time_series_string)
-
-        data[
-            f"{IRI('https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#hasSuccessStatus').lined}"
-        ] = [""]
 
         # Anomaly detection logic
         # iterate over unscrewing_torque_time_series and axial_force_time_series and position time series simultaneously
