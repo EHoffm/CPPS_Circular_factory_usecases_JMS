@@ -1,7 +1,10 @@
+from time import time
+
 from graph_db_interface import GraphDB, GraphDBCredentials, IRI
 from kapps_ogm.ogm import OGM
 from kapps_ogm.utils.class_scope import ClassScope
 import json
+import time
 
 from dotenv import load_dotenv
 from screwing_resource import ScrewingResource
@@ -11,6 +14,7 @@ from learner import Learner
 
 
 def main():
+    start = time.perf_counter()
     credentials = GraphDBCredentials.from_env()
     ogm = OGM(db=GraphDB(credentials=credentials), loader=None)
     screwing_resource = ScrewingResource()
@@ -93,8 +97,13 @@ def main():
     )  # fetches UnscrewingOperation instance
 
     annotated_data = anomaly_detector.detect_anomaly(fetched_data)
+    start_commit = time.perf_counter()
     anomaly_detector.updateUnscrewingOperationviaProfiNet(
         instance_iri=process_instance_iri, data=annotated_data
+    )
+    end_commit = time.perf_counter()
+    print(
+        f"Time taken for anomaly detection and update: {end_commit - start_commit:.6f} seconds"
     )
     # add second unscrewing operation instance for the learning example
     screwing_resource.write_time_series_data_to_knowledge_graph(
@@ -114,6 +123,10 @@ def main():
     learner.learn_from_process_descriptions()
     for process_iri, params in learner.learned_parameters.items():
         learner.update_screwing_process_parameters(process_iri, params)
+    result = sum(range(1000000))
+
+    end = time.perf_counter()
+    print(f"Dauer: {end - start:.6f} Sekunden")
 
 
 if __name__ == "__main__":
