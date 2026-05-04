@@ -75,6 +75,13 @@ class Workflow:
 
             self.workflow_method = remote_method
 
+    @property
+    def has_empty_payload(self) -> bool:
+        """Determine if the workflow accepts an empty payload (i.e. has no fields)."""
+        if not self.payload_model:
+            raise ValueError("Payload model not defined")
+        return len(self.payload_model.model_fields) == 0
+
     def _call_remote(self, payload: WorkflowPayload) -> WorkflowResponse:
         """
         Execute a remote workflow call and robustly parse the response.
@@ -342,9 +349,12 @@ class Workflow:
         """
 
         if not payload and not kwargs:
-            raise ValueError(
-                "Must provide either a payload instance or keyword arguments"
-            )
+            if self.has_empty_payload:
+                payload = self.payload_model()  # Create empty payload instance
+            else:
+                raise ValueError(
+                    "Must provide either a payload instance or keyword arguments"
+                )
         if payload and kwargs:
             raise ValueError(
                 "Cannot provide both payload instance and keyword arguments"

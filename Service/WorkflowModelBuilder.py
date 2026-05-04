@@ -2,7 +2,6 @@ from typing import Optional, Any, Dict, Type, List, Tuple
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field, create_model
 from graph_db_interface import IRI
-from graph_db_interface.utils.utils import XSDToPythonTypes
 from kapps_ogm.ogm import OGM, ClassScope
 from kapps_ogm.mapping.class_spec import ClassHydrationLevel
 import logging
@@ -130,20 +129,15 @@ def _create_model(
 
     for binding in bindings:
         property_iri = binding.get("property")
-        datatype_iri = binding.get("datatype")
+        python_type = binding.get("datatype")
 
-        if not property_iri or not datatype_iri:
+        if not property_iri or not python_type:
             raise Exception(
                 f"Invalid OWL restriction for class {workflow_class_iri}: missing property or datatype"
             )
 
         # Extract field name from property IRI using graph_db_interface utility
         field_name = property_iri.lined
-
-        # Convert XSD datatype to Python type using graph_db_interface mapping
-        python_type = XSDToPythonTypes.get(
-            datatype_iri, str
-        )  # Default to str if unknown type
 
         # Create field definition: (type, default_value)
         # Using ... as default means required field in Pydantic
