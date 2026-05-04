@@ -127,7 +127,7 @@ class User(Service):
 
         try:
             if op in ("add", "subtract"):
-                a = random.uniform(-100.0, 100.0)
+                a = random.choice((random.uniform(-100.0, 100.0), 42.0))
                 b = random.uniform(-100.0, 100.0)
                 response = self.remote_workflows[op](
                     **{
@@ -138,7 +138,7 @@ class User(Service):
             elif op == "random":
                 response = self.remote_workflows["random"]()
             elif op == "void":
-                v = random.uniform(-100.0, 100.0)
+                v = random.choice((random.uniform(-100.0, 100.0), 42.0))
                 response = self.remote_workflows["void"](
                     **{IRI(f"{CALC}value").lined: v}
                 )
