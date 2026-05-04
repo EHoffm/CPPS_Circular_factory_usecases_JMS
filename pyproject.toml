@@ -24,8 +24,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 packages = [
-    {include = "Service"},
-    {include = "Usecase_Demo_Calculator"},
     {include = "Usecase_FlexConveyor_decentral"},
     {include = "Usecase_Vertical_integration"},
 ]
@@ -38,6 +36,7 @@ matplotlib = "^3.10.8"
 graph_db_interface = { git = "https://github.com/SAWeindel/graph_db_interface.git", branch = "hackathon" }
 kapps-ogm = { git = "https://github.com/SAWeindel/kapps_ogm.git", branch = "hackathon" }
 semantic-middleware = { git = "https://github.com/SAWeindel/semantic_middleware.git", branch = "hackathon"}
+semantic-service = { git = "https://github.com/SAWeindel/semantic_service.git", branch = "hackathon" }
 
 
 [tool.poetry.group.dev.dependencies]

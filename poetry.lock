@@ -4100,6 +4100,29 @@ reference = "hackathon"
 resolved_reference = "958a0269936cad327b01f58cb2c297baf5d03b69"
 
 [[package]]
+name = "semantic-service"
+version = "0.1.0"
+description = "Service Extension for the semantic middleware"
+optional = false
+python-versions = "^3.13"
+files = []
+develop = false
+
+[package.dependencies]
+graph_db_interface = {git = "https://github.com/SAWeindel/graph_db_interface.git", branch = "hackathon"}
+kapps-ogm = {git = "https://github.com/SAWeindel/kapps_ogm.git", branch = "hackathon"}
+matplotlib = "^3.10.8"
+semantic-middleware = {git = "https://github.com/SAWeindel/semantic_middleware.git", branch = "hackathon"}
+streamlit = "^1.55.0"
+streamlit-autorefresh = "^1.0.1"
+
+[package.source]
+type = "git"
+url = "https://github.com/SAWeindel/semantic_service.git"
+reference = "hackathon"
+resolved_reference = "f443900290d6f2ded6f738a89206e9e867b46875"
+
+[[package]]
 name = "shellingham"
 version = "1.5.4"
 description = "Tool to Detect Surrounding Shell"
@@ -4889,4 +4912,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.13"
-content-hash = "7faa96ff8a53f8fca5173dbed69cb91d2d276b9bdacf6b9aef978928cfacb9fb"
+content-hash = "829fd7a5d698b0d1b13cf38d090ddcf6676a19e2d5411d1d94cd2389ea144594"
