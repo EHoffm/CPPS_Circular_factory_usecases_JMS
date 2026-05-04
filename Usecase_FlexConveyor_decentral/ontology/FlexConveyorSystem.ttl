@@ -145,6 +145,11 @@ _:AcceptBoxPayload a owl:Class ;
         a owl:Restriction ;
         owl:onProperty wf:accepts ;
         owl:hasValue _:ReservePayload
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty wf:receives ;
+        owl:hasValue _:ReserveResponse
     ] .
 
 :ConveyWorkflow rdf:type owl:Class ;
@@ -153,6 +158,11 @@ _:AcceptBoxPayload a owl:Class ;
         a owl:Restriction ;
         owl:onProperty wf:accepts ;
         owl:hasValue _:ConveyPayload
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty wf:receives ;
+        owl:hasValue _:ConveyResponse
     ] .
 
 :ReceiveWorkflow rdf:type owl:Class ;
@@ -161,6 +171,11 @@ _:AcceptBoxPayload a owl:Class ;
         a owl:Restriction ;
         owl:onProperty wf:accepts ;
         owl:hasValue _:ReceivePayload
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty wf:receives ;
+        owl:hasValue _:ReceiveResponse
     ] .
 
 :SpawnBoxWorkflow rdf:type owl:Class ;
@@ -169,6 +184,11 @@ _:AcceptBoxPayload a owl:Class ;
         a owl:Restriction ;
         owl:onProperty wf:accepts ;
         owl:hasValue _:SpawnBoxPayload
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty wf:receives ;
+        owl:hasValue _:SpawnBoxResponse
     ] .
 
 :AcceptBoxWorkflow rdf:type owl:Class ;
@@ -177,6 +197,11 @@ _:AcceptBoxPayload a owl:Class ;
         a owl:Restriction ;
         owl:onProperty wf:accepts ;
         owl:hasValue _:AcceptBoxPayload
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty wf:receives ;
+        owl:hasValue _:AcceptBoxResponse
     ] .
 
 #################################################################
