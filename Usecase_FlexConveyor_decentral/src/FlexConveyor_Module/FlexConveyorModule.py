@@ -9,14 +9,7 @@ import semantic_middleware as smw
 from graph_db_interface.utils.iri import IRI
 
 from kapps_ogm import OGM, ClassScope
-from Service.Service import Service
-from semantic_middleware.model.util import (
-    convert_camel_case_to_underscrore_str,
-    get_id_with_patch,
-)
-
-from Service.Workflow import Workflow, WorkflowPayload, WorkflowResponse
-
+from semantic_service import Service, Workflow, WorkflowPayload, WorkflowResponse
 
 FC = "http://w3id.org/circularfactory/FlexConveyor#"
 

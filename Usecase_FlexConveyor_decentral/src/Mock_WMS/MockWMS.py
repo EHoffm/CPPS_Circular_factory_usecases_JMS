@@ -19,8 +19,7 @@ from pydantic import BaseModel
 from kapps_ogm import OGM, ClassScope
 
 # Absolute import - works whether run as script or installed package
-from Service.Workflow import Workflow, WorkflowPayload, WorkflowResponse
-from Service.Service import Service
+from semantic_service import Service, Workflow, WorkflowPayload, WorkflowResponse
 
 FC = "http://w3id.org/circularfactory/FlexConveyor#"
 

@@ -36,6 +36,7 @@ matplotlib = "^3.10.8"
 graph_db_interface = { git = "https://github.com/SAWeindel/graph_db_interface.git", rev = "748a4e14270dac0ea237f97d878ac1981820ad3b" }
 kapps-ogm = { git = "https://github.com/SAWeindel/kapps_ogm.git", rev = "5f5cef6171e4b8300b385dc8f2f7ac518dab3774" }
 semantic-middleware = { git = "https://github.com/SAWeindel/semantic_middleware.git", rev = "b27869198d91e638cbe5816b31e5f471f12163c6" }
+semantic-service = { git = "https://github.com/SAWeindel/semantic_service.git", rev = "cfdf6b551c9f696bdaf476e4c19f392af82d4f07" }
 
 
 [tool.poetry.group.dev.dependencies]
