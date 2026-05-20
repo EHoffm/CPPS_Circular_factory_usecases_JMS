@@ -8,7 +8,7 @@ import streamlit as st
 from graph_db_interface.utils.graph_db_credentials import GraphDBCredentials
 from graph_db_interface import GraphDB
 from graph_db_interface.utils.iri import IRI
-from circular_factory_ogm import OGM
+from kapps_ogm import OGM
 
 
 def initialize_login_session_state():
@@ -39,7 +39,7 @@ def render_connection_status():
     """Render the connection status and disconnect button."""
     if st.session_state.graphdb_connected:
         st.success("✅ Connected to GraphDB")
-        if st.button("Disconnect", use_container_width=True):
+        if st.button("Disconnect", width="stretch"):
             st.session_state.graphdb_credentials = None
             st.session_state.graphdb_connected = False
             st.session_state.ogm = None
@@ -91,7 +91,7 @@ def render_manual_login():
     st.session_state.temp_password = password
 
     # Connect Button (Manual entry)
-    if st.button("Connect to GraphDB", use_container_width=True, type="primary"):
+    if st.button("Connect to GraphDB", width="stretch", type="primary"):
         # Validate inputs
         if not base_url or not repository or not username or not password:
             st.error("❌ Please fill in all fields")
@@ -128,7 +128,7 @@ def render_env_login():
     """Render login from environment variables button and repository selector."""
     st.subheader("Or use environment variables")
 
-    if st.button("Login from env", use_container_width=True):
+    if st.button("Login from env", width="stretch"):
         try:
             # Create initial credentials from environment
             credentials = GraphDBCredentials.from_env()
@@ -164,7 +164,7 @@ def render_env_login():
         col1, col2 = st.columns(2)
 
         with col1:
-            if st.button("Connect", use_container_width=True, type="primary"):
+            if st.button("Connect", width="stretch", type="primary"):
                 try:
                     # Create new credentials with selected repository
                     credentials = GraphDBCredentials(
@@ -196,7 +196,7 @@ def render_env_login():
                     st.error(f"❌ Connection failed: {str(e)}")
 
         with col2:
-            if st.button("Cancel", use_container_width=True):
+            if st.button("Cancel", width="stretch"):
                 st.session_state.show_repo_selector = False
                 st.session_state.available_repositories = []
                 st.session_state.temp_credentials = None
@@ -247,9 +247,7 @@ def test_connection():
         results_after_delete = db.triples_get(sub=test_subject)
 
         if not results_after_delete:
-            st.success(
-                "✅ Connection test successful! Triple was properly deleted."
-            )
+            st.success("✅ Connection test successful! Triple was properly deleted.")
         else:
             st.warning(f"⚠️ Found {len(results_after_delete)} triple(s) after deletion")
 
@@ -261,7 +259,7 @@ def render_connection_test():
     """Render connection test button (only visible when connected)."""
     st.divider()
     st.subheader("Connection Verification")
-    if st.button("Test Connection", use_container_width=True, type="secondary"):
+    if st.button("Test Connection", width="stretch", type="secondary"):
         test_connection()
 
 
@@ -296,7 +294,7 @@ def render_login_sidebar():
 
 def is_connected() -> bool:
     """Check if user is connected to GraphDB.
-    
+
     Returns:
         bool: True if connected, False otherwise.
     """
@@ -305,7 +303,7 @@ def is_connected() -> bool:
 
 def get_credentials() -> GraphDBCredentials:
     """Get the current GraphDB credentials from session state.
-    
+
     Returns:
         GraphDBCredentials: The stored credentials, or None if not connected.
     """
@@ -314,7 +312,7 @@ def get_credentials() -> GraphDBCredentials:
 
 def get_ogm() -> OGM:
     """Get the current OGM instance from session state.
-    
+
     Returns:
         OGM: The initialized OGM instance, or None if not initialized.
     """
@@ -323,7 +321,7 @@ def get_ogm() -> OGM:
 
 def is_ogm_initialized() -> bool:
     """Check if OGM is initialized.
-    
+
     Returns:
         bool: True if OGM is initialized, False otherwise.
     """

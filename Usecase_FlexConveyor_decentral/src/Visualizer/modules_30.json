@@ -1,0 +1,1462 @@
+[
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module1",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#EntryModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection1",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module7"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection2",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module2"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module2",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#EntryModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection3",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module8"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection4",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module3"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection5",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module1"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module3",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#EntryModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection6",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module9"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection7",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module4"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection8",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module2"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module4",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#EntryModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection9",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module10"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection10",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module5"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection11",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module3"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module5",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#EntryModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection12",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module11"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection13",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module6"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection14",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module4"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module6",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#EntryModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection15",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module12"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection16",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module5"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module7",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection17",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module1"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection18",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module13"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection19",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module8"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module8",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection20",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module2"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection21",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module14"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection22",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module9"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection23",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module7"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module9",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection24",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module3"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection25",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module15"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection26",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module10"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection27",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module8"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module10",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection28",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module4"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection29",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module16"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection30",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module11"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection31",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module9"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module11",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection32",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module5"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection33",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module17"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection34",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module12"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection35",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module10"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module12",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection36",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module6"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection37",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module18"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection38",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module11"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module13",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection39",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module7"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection40",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module19"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection41",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module14"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module14",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection42",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module8"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection43",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module20"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection44",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module15"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection45",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module13"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module15",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection46",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module9"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection47",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module21"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection48",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module16"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection49",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module14"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module16",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection50",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module10"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection51",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module22"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection52",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module17"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection53",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module15"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module17",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection54",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module11"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection55",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module23"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection56",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module18"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection57",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module16"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module18",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection58",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module12"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection59",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module24"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection60",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module17"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module19",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection61",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module13"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection62",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module25"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection63",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module20"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module20",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection64",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module14"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection65",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module26"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection66",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module21"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection67",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module19"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module21",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection68",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module15"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection69",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module27"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection70",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module22"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection71",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module20"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module22",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection72",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module16"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection73",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module28"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection74",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module23"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection75",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module21"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module23",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection76",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module17"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection77",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module29"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection78",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module24"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection79",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module22"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module24",
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection80",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module18"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection81",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module30"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#South"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection82",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module23"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module25",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#ExitModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection83",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module19"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection84",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module26"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module26",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#ExitModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection85",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module20"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection86",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module27"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection87",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module25"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module27",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#ExitModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection88",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module21"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection89",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module28"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection90",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module26"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module28",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#ExitModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection91",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module22"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection92",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module29"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection93",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module27"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module29",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#ExitModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection94",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module23"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection95",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module30"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#East"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection96",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module28"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module30",
+        "http_c__s__s_www_d_w3_d_org_s_1999_s_02_s_22-rdf-syntax-ns_h_type": [
+            "http://w3id.org/circularfactory/FlexConveyor#ExitModule"
+        ],
+        "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasConnection": [
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection97",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module24"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#North"
+                    }
+                ]
+            },
+            {
+                "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Connection98",
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_connectsTo": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyorInstances#Module29"
+                    }
+                ],
+                "http_c__s__s_w3id_d_org_s_circularfactory_s_FlexConveyor_h_hasDirection": [
+                    {
+                        "id": "http://w3id.org/circularfactory/FlexConveyor#West"
+                    }
+                ]
+            }
+        ]
+    }
+]

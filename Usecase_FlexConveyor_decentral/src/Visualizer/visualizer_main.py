@@ -9,20 +9,19 @@ import os
 import importlib
 import subprocess
 import sys
-from io import BytesIO
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 
 
 def _bootstrap_import_paths() -> None:
     script_path = Path(__file__).resolve()
     package_dirs = (
+        "kapps_ogm",
         "circular_factory_ogm",
         "graph_db_interface",
-        "aas_middleware_inf",
+        "semantic_middleware",
         "datamodel_connector",
     )
 
@@ -40,7 +39,12 @@ def _bootstrap_import_paths() -> None:
 
 _bootstrap_import_paths()
 
-from utils.bootstrap import register_shutdown_handlers
+from utils.bootstrap import (
+    register_shutdown_handlers,
+    instantiate_modules,
+    instantiate_wms,
+    get_wms,
+)
 from utils import (
     initialize_login_session_state,
     render_login_sidebar,
@@ -149,6 +153,88 @@ else:
     else:
         st.warning("✅ Connected to GraphDB - OGM not initialized")
 
+    # Handle instantiation request (runs regardless of active tab)
+    if st.session_state.get("instantiation_requested", False):
+        ogm = get_ogm()
+        if ogm is None:
+            st.error("❌ OGM instance not found in session state.")
+            st.session_state.instantiation_requested = False
+        else:
+            # Clear flag before instantiation
+            st.session_state.instantiation_requested = False
+
+            # Instantiate modules first
+            with st.spinner("⚙️ Instantiating modules..."):
+                concurrent_guard_override = st.session_state.get(
+                    "flexconveyor_concurrent_guard_override", False
+                )
+                module_results = instantiate_modules(
+                    st.session_state.modules,
+                    ogm,
+                    concurrent_guard_override=concurrent_guard_override,
+                )
+
+            # Check if any modules were successfully instantiated
+            running_modules = [
+                r for r in module_results if r.get("status") == "running"
+            ]
+
+            if running_modules:
+                st.success(
+                    f"✅ {len(running_modules)}/{len(st.session_state.modules)} modules instantiated successfully!"
+                )
+
+                # Instantiate WMS after modules
+                with st.spinner("🏭 Instantiating WMS..."):
+                    number_of_boxes = st.session_state.get("wms_number_of_boxes", 1)
+                    wms_result = instantiate_wms(ogm, number_of_boxes=number_of_boxes)
+
+                if wms_result.get("status") == "running":
+                    st.success("✅ MockWMS instantiated successfully!")
+                else:
+                    st.warning(
+                        f"⚠️ WMS instantiation failed: {wms_result.get('error', 'Unknown error')}"
+                    )
+            else:
+                st.error(
+                    "❌ No modules were successfully instantiated. WMS not started."
+                )
+
+    # Handle WMS spawn-box request
+    if st.session_state.get("wms_spawn_box_requested", False):
+        st.session_state.wms_spawn_box_requested = False
+        wms = get_wms()
+        if wms is None:
+            st.error("❌ WMS is not running. Instantiate it first.")
+        else:
+            try:
+                wms._spawn_random_box()
+                st.success("✅ Spawned a new box into the system.")
+            except Exception as e:
+                st.error(f"❌ Spawn failed: {e}")
+
+    # Handle WMS-only instantiation request
+    if st.session_state.get("wms_instantiation_requested", False):
+        ogm = get_ogm()
+        if ogm is None:
+            st.error("❌ OGM instance not found in session state.")
+            st.session_state.wms_instantiation_requested = False
+        else:
+            # Clear flag before instantiation
+            st.session_state.wms_instantiation_requested = False
+
+            # Instantiate WMS
+            with st.spinner("🏭 Instantiating WMS..."):
+                number_of_boxes = st.session_state.get("wms_number_of_boxes", 1)
+                wms_result = instantiate_wms(ogm, number_of_boxes=number_of_boxes)
+
+            if wms_result.get("status") == "running":
+                st.success("✅ MockWMS instantiated successfully!")
+            else:
+                st.error(
+                    f"❌ WMS instantiation failed: {wms_result.get('error', 'Unknown error')}"
+                )
+
     section = st.radio(
         "Section",
         options=["🏗️ Bootstrap", "📊 Monitor", "🎮 Control"],
@@ -178,8 +264,6 @@ else:
             st.session_state.adjacency_matrix = {}
         if "directional_rows" not in st.session_state:
             st.session_state.directional_rows = []
-        if "topology_image_png" not in st.session_state:
-            st.session_state.topology_image_png = None
 
         action_col1, action_col2 = st.columns(2)
 
@@ -191,10 +275,6 @@ else:
                 st.session_state.get("ogm")
             )
 
-        if action_col2.button(
-            "build adjacency matrix", key="build_adjacency_matrix"
-        ):
-            monitor_module = importlib.import_module("utils.system_state_monitor")
             st.session_state.adjacency_matrix = monitor_module.build_adjacency_matrix(
                 st.session_state.get("ogm")
             )
@@ -206,32 +286,88 @@ else:
                 )
             )
 
-            topology_figure = topology_module.directional_rows_to_figure(
-                st.session_state.directional_rows
-            )
-            image_buffer = BytesIO()
-            topology_figure.savefig(
-                image_buffer,
-                format="png",
-                dpi=120,
-                bbox_inches="tight",
-                pad_inches=0.02,
-                transparent=True,
-            )
-            st.session_state.topology_image_png = image_buffer.getvalue()
-            image_buffer.close()
-            plt.close(topology_figure)
-
         if st.session_state.adjacency_matrix:
+            # Live Monitoring Controls
+            st.divider()
+
+            # Initialize live monitoring state
+            if "live_monitor_enabled" not in st.session_state:
+                st.session_state.live_monitor_enabled = False
+            if "live_monitor_refresh_rate" not in st.session_state:
+                st.session_state.live_monitor_refresh_rate = 1000
+            if "live_monitor_previous_state" not in st.session_state:
+                st.session_state.live_monitor_previous_state = False
+
+            # Control panel for live monitoring
+            col1, col2, col3 = st.columns([2, 1, 2])
+            with col1:
+                enable_monitoring = st.checkbox(
+                    "🔴 Enable live auto-refresh",
+                    value=st.session_state.live_monitor_enabled,
+                    key="enable_live_monitoring",
+                    help="Automatically refresh box locations and topology at the specified interval",
+                )
+
+                # Detect state change and log it
+                if enable_monitoring != st.session_state.live_monitor_previous_state:
+                    live_monitor_module = importlib.import_module("utils.live_monitor")
+                    live_monitor_module.log_monitoring_state_change(enable_monitoring)
+                    st.session_state.live_monitor_previous_state = enable_monitoring
+
+                st.session_state.live_monitor_enabled = enable_monitoring
+
+            with col2:
+                refresh_rate = st.selectbox(
+                    "Refresh Rate",
+                    options=[500, 1000, 2000, 5000],
+                    index=1,
+                    format_func=lambda x: f"{x/1000:.1f}s",
+                    key="live_refresh_rate",
+                )
+                st.session_state.live_monitor_refresh_rate = refresh_rate
+
+            with col3:
+                if st.session_state.live_monitor_enabled:
+                    st.success("🔄 Live monitoring active")
+                else:
+                    st.info("⏸️ Monitoring paused")
+
+            # Auto-refresh mechanism (only triggers if enabled)
+            if st.session_state.live_monitor_enabled:
+                refresh_count = st_autorefresh(
+                    interval=st.session_state.live_monitor_refresh_rate,
+                    key="live_monitor_autorefresh",
+                )
+
+                # Call the update method
+                live_monitor_module = importlib.import_module("utils.live_monitor")
+                ogm = get_ogm()
+                update_data = live_monitor_module.update_live_monitoring_data(ogm)
+
             st.subheader("System Topology")
 
-            if st.session_state.topology_image_png:
-                left_col, center_col, right_col = st.columns([0.2, 0.6, 0.2])
-                with center_col:
-                    st.image(st.session_state.topology_image_png, use_container_width=True)
+            # Display dynamic topology visualization
+            if st.session_state.directional_rows:
+                topology_module = importlib.import_module("utils.topology_renderer")
+                live_monitor_module = importlib.import_module("utils.live_monitor")
+
+                ogm = get_ogm()
+                box_locations = live_monitor_module.fetch_box_locations_for_monitoring(
+                    ogm
+                )
+
+                # Create live PNG buffer with boxes (fast rendering)
+                image_buf = live_monitor_module.create_live_topology_figure(
+                    st.session_state.directional_rows, box_locations
+                )
+                st.image(image_buf, width="stretch")
+            else:
+                st.warning(
+                    "No topology data available. Click 'build adjacency matrix' to generate it."
+                )
 
             if st.session_state.directional_rows:
-                st.caption("Adjacency Matrix ")
+                st.caption("Adjacency Matrix")
 
                 def _display_value(value):
                     if value == 0 or value is None:
@@ -248,8 +384,64 @@ else:
                     }
                     for row in st.session_state.directional_rows
                 ]
-                st.dataframe(topology_table, use_container_width=True)
-           
+                st.dataframe(topology_table, width="stretch")
+
+        st.subheader("Box Locations")
+
+        # Show live box locations if auto-refresh is enabled, otherwise show manual refresh button
+        if st.session_state.get("live_monitor_enabled", True):
+            # Live monitoring mode - fetch and display automatically
+            live_monitor_module = importlib.import_module("utils.live_monitor")
+            ogm = get_ogm()
+            box_locations = live_monitor_module.fetch_box_locations_for_monitoring(ogm)
+
+            col_metrics, col_data = st.columns([1, 3])
+
+            with col_metrics:
+                if box_locations:
+                    total_boxes = sum(len(boxes) for boxes in box_locations.values())
+                    st.metric("Active Boxes", total_boxes)
+                    st.metric("Modules with Boxes", len(box_locations))
+                else:
+                    st.metric("Active Boxes", 0)
+
+            with col_data:
+                if box_locations:
+                    location_data = []
+                    for module_iri, box_iris in sorted(box_locations.items()):
+                        for box_iri in box_iris:
+                            location_data.append(
+                                {
+                                    "Module": module_iri,
+                                    "Box": box_iri,
+                                }
+                            )
+                    st.dataframe(location_data, width="stretch")
+                else:
+                    st.info("📦 No boxes currently in the system.")
+        else:
+            # Manual refresh mode - show button
+            if st.button("Refresh box locations", key="refresh_box_locations"):
+                monitor_module = importlib.import_module("utils.system_state_monitor")
+                box_locations = monitor_module.get_box_locations(
+                    st.session_state.get("ogm")
+                )
+
+                if not box_locations:
+                    st.info("📦 No boxes currently in the system.")
+                else:
+                    location_data = []
+                    for module_iri, box_iris in sorted(box_locations.items()):
+                        for box_iri in box_iris:
+                            location_data.append(
+                                {
+                                    "Module": module_iri,
+                                    "Box": box_iri,
+                                }
+                            )
+
+                    st.dataframe(location_data, width="stretch")
+
         button_columns = st.columns(4)
         for index, discovered_module in enumerate(st.session_state.discovered_modules):
             module_id = discovered_module.get("module_id", "unknown module")
@@ -269,11 +461,218 @@ else:
                 with button_columns[index % 4]:
                     st.caption(f"{module_id}: no accessibleAt value found")
 
-        st.info("Coming soon: Real-time system visualization")
-
     else:
         st.header("Runtime Control")
-        st.info("Coming soon: Simulation and box injection controls")
+
+        if not is_ogm_initialized():
+            st.warning("⚠️ OGM not initialized. Please reconnect to GraphDB.")
+        else:
+            ogm = get_ogm()
+
+            # Ensure shared discovery state exists (also used by Monitor tab)
+            if "discovered_modules" not in st.session_state:
+                st.session_state.discovered_modules = []
+
+            st.subheader("Inject and Route Boxes")
+
+            control_module = importlib.import_module("utils.control")
+            route_module = importlib.import_module("utils.route_planner")
+            topology_module = importlib.import_module("utils.topology_renderer")
+
+            col_refresh, _ = st.columns([1, 3])
+            with col_refresh:
+                if st.button(
+                    "Refresh modules",
+                    key="control_refresh_modules",
+                    width="stretch",
+                ):
+                    st.session_state.discovered_modules = (
+                        control_module.discover_modules(ogm)
+                    )
+
+            discovered = st.session_state.discovered_modules
+
+            if not discovered:
+                st.info(
+                    "No instantiated modules discovered yet. "
+                    "Use the Bootstrap & Monitor tabs to create modules, then click 'Refresh modules'."
+                )
+            else:
+                module_ids = [
+                    m.get("module_id", "") for m in discovered if m.get("module_id")
+                ]
+
+                entry_module_id = st.selectbox(
+                    "Entry module (where the box is first received)",
+                    options=module_ids,
+                    key="control_entry_module_id",
+                )
+
+                box_iri = st.text_input(
+                    "Box IRI",
+                    value=st.session_state.get(
+                        "control_box_iri",
+                        "http://w3id.org/circularfactory/FlexConveyorInstances#Box1",
+                    ),
+                    key="control_box_iri",
+                    help="Full IRI of the box to inject into the system.",
+                )
+
+                dest_options = ["(no override – use existing destination)"] + module_ids
+                dest_choice = st.selectbox(
+                    "Destination module (optional)",
+                    options=dest_options,
+                    key="control_destination_module_id",
+                    help=(
+                        "If set, the receive workflow will update the box's hasDestination "
+                        "to this module and immediately start routing. If left as the first "
+                        "option, any existing destination in the knowledge graph is used."
+                    ),
+                )
+
+                destination_iri = (
+                    None if dest_choice == dest_options[0] else dest_choice
+                )
+
+                # Look up the selected module's accessibleAt URL from the
+                # cached discovery result so we don't touch GraphDB/OGM on
+                # every injection.
+                selected_module = next(
+                    (m for m in discovered if m.get("module_id") == entry_module_id),
+                    None,
+                )
+                entry_module_url = (
+                    (selected_module or {}).get("accessible_at")
+                    if selected_module
+                    else None
+                )
+
+                if st.button("Inject box", type="primary", key="control_inject_box"):
+                    if not box_iri:
+                        st.error("Please provide a Box IRI before injecting.")
+                    elif not entry_module_url:
+                        st.error(
+                            "Selected entry module has no accessibleAt URL. "
+                            "Rebuild and discover modules in the Monitor tab, then refresh."
+                        )
+                    else:
+                        with st.spinner("Sending box to selected module..."):
+                            result = control_module.inject_box_via_url(
+                                ogm=ogm,
+                                entry_module_iri=entry_module_id,
+                                entry_module_url=entry_module_url,
+                                box_iri=box_iri,
+                                destination_iri=destination_iri,
+                            )
+
+                        status = result.get("status")
+                        if status == "ok":
+                            st.success(
+                                f"Box injected successfully into module {entry_module_id} "
+                                f"(HTTP {result.get('http_status')})."
+                            )
+                        elif status == "downstream_error":
+                            st.error(
+                                "The target module responded with an error "
+                                f"(HTTP {result.get('http_status')})."
+                            )
+                        else:
+                            st.error(
+                                result.get("error", "Unknown error during injection")
+                            )
+
+                        with st.expander("Request details", expanded=False):
+                            st.json(
+                                {
+                                    "receive_url": result.get("receive_url"),
+                                    "payload": result.get("payload"),
+                                    "response": result.get("response"),
+                                }
+                            )
+
+                st.divider()
+                st.subheader("Step-by-step Route Visualization")
+
+                if "simulation_route" not in st.session_state:
+                    st.session_state.simulation_route = []
+                if "simulation_step_index" not in st.session_state:
+                    st.session_state.simulation_step_index = 0
+
+                sim_col1, sim_col2, sim_col3 = st.columns(3)
+
+                start_clicked = sim_col1.button("Start", key="sim_start")
+                step_clicked = sim_col2.button("Step", key="sim_step")
+                stop_clicked = sim_col3.button("Stop", key="sim_stop")
+
+                if start_clicked:
+                    if not destination_iri:
+                        st.error(
+                            "Please select a destination module for visualization."
+                        )
+                    else:
+                        # Build or reuse adjacency map from the monitor helpers
+                        if not st.session_state.get("adjacency_matrix"):
+                            monitor_module = importlib.import_module(
+                                "utils.system_state_monitor"
+                            )
+                            st.session_state.adjacency_matrix = (
+                                monitor_module.build_adjacency_matrix(ogm)
+                            )
+
+                        adj_map = st.session_state.adjacency_matrix
+                        graph = route_module.build_topology_graph(adj_map)
+                        route = route_module.dijkstra_shortest_path(
+                            graph,
+                            source=entry_module_id,
+                            target=destination_iri,
+                        )
+
+                        if not route or len(route) < 2:
+                            st.error(
+                                "No valid route found between the selected modules."
+                            )
+                            st.session_state.simulation_route = []
+                            st.session_state.simulation_step_index = 0
+                        else:
+                            st.session_state.simulation_route = route
+                            st.session_state.simulation_step_index = 0
+
+                if step_clicked and st.session_state.simulation_route:
+                    if (
+                        st.session_state.simulation_step_index
+                        < len(st.session_state.simulation_route) - 1
+                    ):
+                        st.session_state.simulation_step_index += 1
+
+                if stop_clicked:
+                    st.session_state.simulation_route = []
+                    st.session_state.simulation_step_index = 0
+
+                current_module_for_box = None
+                if st.session_state.simulation_route:
+                    idx = st.session_state.simulation_step_index
+                    if 0 <= idx < len(st.session_state.simulation_route):
+                        current_module_for_box = st.session_state.simulation_route[idx]
+
+                if not st.session_state.get("adjacency_matrix"):
+                    st.info(
+                        "No topology information available yet. Use the Monitor tab "
+                        "to build the adjacency matrix or press Start to initialize it."
+                    )
+                else:
+                    if not st.session_state.get("directional_rows"):
+                        st.session_state.directional_rows = (
+                            topology_module.adjacency_map_to_directional_rows(
+                                st.session_state.adjacency_matrix
+                            )
+                        )
+
+                    if st.session_state.directional_rows:
+                        fig = topology_module.directional_rows_to_figure_with_box(
+                            st.session_state.directional_rows,
+                            current_module_for_box,
+                        )
+                        st.pyplot(fig, clear_figure=True)
 
 
 # ============================================================================
