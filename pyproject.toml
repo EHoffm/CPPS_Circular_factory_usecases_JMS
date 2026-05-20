@@ -3,14 +3,14 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "jms-usecase-2"
+name = "cpps-circular-factory-usecases-jms"
 version = "0.1.0"
 description = "FlexConveyor System with GraphDB integration and Streamlit interface"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
 license = "MIT"
-homepage = "https://gitlab.kit.edu/kit/ifl/forschung/sfb1574/inf/jms_usecase_2"
-repository = "https://gitlab.kit.edu/kit/ifl/forschung/sfb1574/inf/jms_usecase_2"
+homepage = "https://github.com/EHoffm/CPPS_Circular_factory_usecases_JMS"
+repository = "https://github.com/EHoffm/CPPS_Circular_factory_usecases_JMS"
 keywords = ["flexconveyor", "graphdb", "streamlit", "automation", "logistics"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -33,9 +33,9 @@ python = "3.13.11"
 streamlit = "^1.55.0"
 streamlit-autorefresh = "^1.0.1"
 matplotlib = "^3.10.8"
-graph_db_interface = { git = "https://github.com/SAWeindel/graph_db_interface.git", rev = "dd2b39baa60cb43c11338d196d998404a555707a" }
-kapps-ogm = { git = "https://github.com/SAWeindel/kapps_ogm.git", rev = "445e744f2de77c3ff014562419a535b8fecb0365" }
-semantic-middleware = { git = "https://github.com/SAWeindel/semantic_middleware.git", rev = "e11efd68eb855fa3baae67664b9c62c857d51069" }
+graph_db_interface = { git = "https://github.com/SAWeindel/graph_db_interface.git", rev = "52497b51d717f58aa8775108677128ef971bc008" }
+kapps-ogm = { git = "https://github.com/SAWeindel/kapps_ogm.git", rev = "0a3b8c5b40c7b3b61377d6e47ea6db1d3770ed1a" }
+semantic-middleware = { git = "https://github.com/SAWeindel/semantic_middleware.git", rev = "b27869198d91e638cbe5816b31e5f471f12163c6" }
 
 
 [tool.poetry.group.dev.dependencies]
