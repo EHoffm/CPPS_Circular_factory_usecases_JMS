@@ -19,7 +19,6 @@ def _bootstrap_import_paths() -> None:
     script_path = Path(__file__).resolve()
     package_dirs = (
         "kapps_ogm",
-        "circular_factory_ogm",
         "graph_db_interface",
         "semantic_middleware",
         "datamodel_connector",
@@ -100,8 +99,7 @@ if not is_connected():
 
     with col1:
         st.subheader("Getting Started")
-        st.markdown(
-            """
+        st.markdown("""
         The FlexConveyor Visualizer provides three main capabilities:
         
         1. **System Bootstrapping** 🏗️
@@ -118,13 +116,11 @@ if not is_connected():
            - Inject boxes into the system
            - Start/stop/step simulation
            - Edit system configuration
-        """
-        )
+        """)
 
     with col2:
         st.subheader("Connection Details")
-        st.markdown(
-            """
+        st.markdown("""
         To get started, you need:
         
         - **GraphDB Server**: A running GraphDB instance
@@ -141,8 +137,7 @@ if not is_connected():
         - Real-time system monitoring
         - Simulation controls
         - Box injection tools
-        """
-        )
+        """)
 
 else:
     # Display connection status with OGM information

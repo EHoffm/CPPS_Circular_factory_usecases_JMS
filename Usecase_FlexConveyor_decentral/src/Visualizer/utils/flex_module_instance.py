@@ -16,7 +16,6 @@ from kapps_ogm import OGM, ClassScope
 
 from .bootstrap import instantiate_modules, instantiate_wms
 
-
 # Hardcoded configuration for FlexConveyor modules
 PROPERTY_CHAINS = [
     [

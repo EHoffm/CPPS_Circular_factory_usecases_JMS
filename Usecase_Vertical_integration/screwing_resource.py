@@ -1,38 +1,41 @@
-from graph_db_interface import IRI, GraphDB, GraphDBCredentials
-from circular_factory_ogm.ogm import OGM
-import json
-import pandas as pd
+from graph_db_interface import IRI, GraphDB
+from kapps_ogm.ogm import OGM, ClassScope
+import requests
 
+# GraphdbCredentials.from_env()
 
+DB_HOST = "127.0.0.1"
+DB_PORT = 5050
+DB_BASE_URL = f"http://{DB_HOST}:{DB_PORT}"
+JMS_Usecase_Demo = "https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#"
 
-
-#GraphdbCredentials.from_env()
 
 class ScrewingResource:
     def __init__(self):
-        credentials = GraphDBCredentials.from_env()
-        self.ogm = OGM(db=GraphDB(credentials=credentials), loader=None)
-        
-    def  write_time_series_data_to_knowledge_graph(self, screw_type:IRI):
-        screw_types = {
-            IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#M3_Screw"): "success",
-            IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#M4_Screw"): "missing_screw",
-            #IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#M5_Screw"): "M5_Screw",
+        self.ogm = OGM(db=GraphDB.from_env())
+
+    def write_time_series_data_to_knowledge_graph(self, screw_type: IRI) -> IRI:
+        url_to_torque, url_to_force, url_to_position = requests.get(
+            f"{DB_BASE_URL}/get_reference_to_time_frame"
+        ).json()
+
+        data = {
+            f"{JMS_Usecase_Demo}hasScrew": [{"id": screw_type}],
+            f"{JMS_Usecase_Demo}hasUnscrewingTorqueTimeSeriesData": [
+                {f"{JMS_Usecase_Demo}hasJSONEncodedTimeSeriesData": [url_to_torque]}
+            ],
+            f"{JMS_Usecase_Demo}hasAxialForceTimeSeriesData": [
+                {f"{JMS_Usecase_Demo}hasJSONEncodedTimeSeriesData": [url_to_force]}
+            ],
+            f"{JMS_Usecase_Demo}hasRobotPositionTimeSeriesData": [
+                {f"{JMS_Usecase_Demo}hasJSONEncodedTimeSeriesData": [url_to_position]}
+            ],
         }
-        for screw in screw_types: #TODO: MG: Hier mocken wir zeitreihen Daten. In der echten Implementierung würde hier eine transformerzelle angesteuert
-            #die zeitreihen werden dann im KG Abgelegt
-            #simulates a screwing process and randomly generates a result data structure
-            result= {}
-            #data: {hasScrew: screw_type,
-            #    hasunscrewingTorqueTimeSeriesData: [...],
-            #    hasAxialForceTimeSeriesData: [...]}
-            pdData = pd.read_csv(f"Usecase_Vertical_integration/unscrewing_timeseries/{screw_types[screw]}.csv")
-            data = {
-                "hasScrew": screw,
-                "hasUnscrewingTorqueTimeSeriesData": pdData["UnscrewingTorque"].to_list(),
-                "hasAxialForceTimeSeriesData": pdData["AxialForce"].to_list(), 
-                "hasRobotPositionTimeSeriesData": pdData["RobotPosition"].to_list(),
-            }
-            self.ogm.create(class_iri=IRI("https://sfb1574.kit.edu/ontologies/JMS_Usecase_Demo#unscrewingOperation"), data=data, persist=True)
-        
-    
+        process_instance = self.ogm.create(
+            class_iri=IRI(f"{JMS_Usecase_Demo}unscrewingOperation"),
+            class_scope=ClassScope.from_data_dict(data),
+            data=data,
+            persist=True,
+        )
+        process_instance_iri = process_instance.id
+        return process_instance_iri
