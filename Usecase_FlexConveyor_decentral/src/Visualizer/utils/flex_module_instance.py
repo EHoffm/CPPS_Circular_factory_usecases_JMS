@@ -11,12 +11,10 @@ import os
 from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
-from graph_db_interface.utils.iri import IRI
-from circular_factory_ogm.utils.class_scope import ClassScope
-from circular_factory_ogm.ogm import OGM
+from graph_db_interface import IRI
+from kapps_ogm import OGM, ClassScope
 
-from .bootstrap import instantiate_modules
-
+from .bootstrap import instantiate_modules, instantiate_wms
 
 # Hardcoded configuration for FlexConveyor modules
 PROPERTY_CHAINS = [
@@ -27,6 +25,10 @@ PROPERTY_CHAINS = [
     [
         IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
         IRI("http://w3id.org/circularfactory/FlexConveyor#hasDirection"),
+    ],
+    [
+        IRI("http://w3id.org/circularfactory/FlexConveyor#hasConnection"),
+        IRI("http://w3id.org/circularfactory/FlexConveyor#onPort"),
     ],
 ]
 
@@ -134,17 +136,19 @@ def render_connection_item(
         with col2:
             # Delete button for this connection
             if st.button(
-                "🗑️ Remove", key=f"{field_path}_remove_{index}", use_container_width=True
+                "🗑️ Remove", key=f"{field_path}_remove_{index}", width="stretch"
             ):
                 return None  # Signal to remove this connection
 
-        # Find connectsTo and direction keys (they might be mangled)
+        # Find connectsTo, direction, and onPort keys (they might be mangled)
         id_key = "id"
         id_value = ""
         connects_to_key = None
         direction_key = None
+        on_port_key = None
         connects_to_value = ""
         direction_value = ""
+        on_port_value = 0
 
         if isinstance(connection_data, dict):
             for key in connection_data.keys():
@@ -173,6 +177,16 @@ def render_connection_item(
                             direction_value = str(val[0])
                     elif not isinstance(val, (list, dict)):
                         direction_value = str(val)
+                elif "onport" in key.lower():
+                    on_port_key = key
+                    # Extract integer value
+                    val = connection_data[key]
+                    if isinstance(val, list) and len(val) > 0:
+                        on_port_value = int(val[0]) if val[0] is not None else 0
+                    elif isinstance(val, (int, str)) and val:
+                        on_port_value = int(val)
+                    else:
+                        on_port_value = 0
 
         if not id_value:
             id_value = get_next_connection_id(
@@ -227,6 +241,16 @@ def render_connection_item(
             key=f"{field_path}_direction_{index}",
         )
 
+        # Number input for onPort
+        new_on_port = st.number_input(
+            "Port Number",
+            min_value=0,
+            max_value=65535,
+            value=on_port_value,
+            step=1,
+            key=f"{field_path}_onPort_{index}",
+        )
+
         # Return updated connection data with original keys
         result = {id_key: new_connection_id}
         if connects_to_key:
@@ -235,6 +259,15 @@ def render_connection_item(
             )
         if direction_key:
             result[direction_key] = [{"id": new_direction}] if new_direction else [{}]
+
+        # Add onPort field
+        if on_port_key:
+            result[on_port_key] = [new_on_port]
+        else:
+            # Use the expected property name from the ontology
+            result["http://w3id.org/circularfactory/FlexConveyor#onPort"] = [
+                new_on_port
+            ]
 
         return result
 
@@ -553,12 +586,12 @@ def render_instance_form(
         if st.button(
             "💾 Save Instance",
             type="primary",
-            use_container_width=True,
+            width="stretch",
             key=f"{form_key}_submit",
         ):
             return user_values
     with col2:
-        if st.button("❌ Cancel", use_container_width=True, key=f"{form_key}_cancel"):
+        if st.button("❌ Cancel", width="stretch", key=f"{form_key}_cancel"):
             # Clear session state
             keys_to_clear = [
                 k for k in st.session_state.keys() if k.startswith(form_key)
@@ -598,6 +631,15 @@ def initialize_flex_instance_session_state():
 
     if "last_uploaded_file" not in st.session_state:
         st.session_state.last_uploaded_file = None
+
+    if "instantiation_requested" not in st.session_state:
+        st.session_state.instantiation_requested = False
+
+    if "wms_instantiation_requested" not in st.session_state:
+        st.session_state.wms_instantiation_requested = False
+
+    if "wms_spawn_box_requested" not in st.session_state:
+        st.session_state.wms_spawn_box_requested = False
 
 
 def render_flex_module_instantiation(ogm: OGM):
@@ -696,7 +738,7 @@ def render_flex_module_instantiation(ogm: OGM):
                         if st.button(
                             "✏️",
                             key=f"edit_module_{idx}",
-                            use_container_width=True,
+                            width="stretch",
                         ):
                             # Prepare edit form with existing module data
                             st.session_state.editing_module_index = idx
@@ -722,9 +764,7 @@ def render_flex_module_instantiation(ogm: OGM):
                             st.rerun()
 
                     with col3:
-                        if st.button(
-                            "🗑️", key=f"remove_module_{idx}", use_container_width=True
-                        ):
+                        if st.button("🗑️", key=f"remove_module_{idx}", width="stretch"):
                             st.session_state.modules.pop(idx)
                             st.rerun()
 
@@ -744,7 +784,7 @@ def render_flex_module_instantiation(ogm: OGM):
 
         col1, col2 = st.columns([2, 1])
         with col1:
-            if st.button(button_label, type="primary", use_container_width=True):
+            if st.button(button_label, type="primary", width="stretch"):
                 try:
                     with st.spinner("Loading ontology structure..."):
                         # Create blank instance
@@ -769,7 +809,7 @@ def render_flex_module_instantiation(ogm: OGM):
                     st.error(f"❌ Failed to create blank instance: {str(e)}")
 
         with col2:
-            if st.button("👁️ Preview JSON", use_container_width=True):
+            if st.button("👁️ Preview JSON", width="stretch"):
                 st.session_state.show_modules_preview = (
                     not st.session_state.show_modules_preview
                 )
@@ -790,27 +830,63 @@ def render_flex_module_instantiation(ogm: OGM):
                     data=preview_json,
                     file_name="modules_preview.json",
                     mime="application/json",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
         # Instantiate button - always visible when modules exist
         st.divider()
-        col_inst1, col_inst2 = st.columns([1, 1])
+
+        # Configuration options for instantiation
+        st.markdown("**⚙️ Instantiation Options**")
+        col_opt1, col_opt2 = st.columns([1, 1])
+        with col_opt1:
+            number_of_boxes = st.number_input(
+                "Number of boxes to spawn (WMS)",
+                min_value=1,
+                max_value=100,
+                value=st.session_state.get("wms_number_of_boxes", 1),
+                step=1,
+                help="Number of boxes that the WMS will spawn into the system",
+                key="wms_number_of_boxes_input",
+            )
+            st.session_state.wms_number_of_boxes = number_of_boxes
+
+        with col_opt2:
+            concurrent_guard = st.checkbox(
+                "Concurrent guard override (FlexConveyor)",
+                value=st.session_state.get(
+                    "flexconveyor_concurrent_guard_override", False
+                ),
+                help="If enabled, modules can accept boxes even when busy (for testing SHACL violations)",
+                key="flexconveyor_concurrent_guard_override_input",
+            )
+            st.session_state.flexconveyor_concurrent_guard_override = concurrent_guard
+
+        st.divider()
+        col_inst1, col_inst2, col_inst3 = st.columns([1, 1, 1])
         with col_inst1:
             if st.button(
-                "⚡ Instantiate Modules", use_container_width=True, type="primary"
+                "⚡ Instantiate Modules & WMS", width="stretch", type="primary"
             ):
                 if not st.session_state.modules:
                     st.error(
                         "❌ No modules to instantiate. Add at least one module first."
                     )
                 else:
-                    ogm = st.session_state.get("ogm")
-                    if ogm is None:
-                        st.error("❌ OGM instance not found in session state.")
-                    else:
-                        instantiate_modules(st.session_state.modules, ogm)
-                        st.success("✅ Modules instantiated successfully!")
+                    # Set flag to trigger instantiation (persists across tab switches)
+                    st.session_state.instantiation_requested = True
+                    st.rerun()
+
+        with col_inst2:
+            if st.button("🏭 Instantiate WMS", width="stretch", type="secondary"):
+                # Set flag to trigger WMS instantiation
+                st.session_state.wms_instantiation_requested = True
+                st.rerun()
+
+        with col_inst3:
+            if st.button("📦 Spawn Box", width="stretch", type="secondary"):
+                st.session_state.wms_spawn_box_requested = True
+                st.rerun()
 
     # Show form if blank instance was created or editing
     if st.session_state.show_flex_form and st.session_state.flex_instance_fields:

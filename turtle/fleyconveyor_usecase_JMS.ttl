@@ -1,87 +1,362 @@
-@prefix : <https://www.sfb1574.kit.edu/ontologies/FlexConveyor#> .
+@prefix : <http://w3id.org/circularfactory/FlexConveyor#> .
+@prefix cfc_wf: <http://w3id.org/circularfactory/Workflow#> .
+@prefix cfc: <http://www.sfb1574.kit.edu/core#> .
+@prefix domain: <> .
+@prefix kadi: <> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix sh: <http://www.w3.org/ns/shacl#> .
-@prefix inf: <https://www.sfb1574.kit.edu/ontologies/CrcInterfaces#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sp_ins: <> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# Ontology
+#################################################################
 
 : rdf:type owl:Ontology ;
-    owl:imports inf: ;
-    rdfs:comment "Ontology for modeling flex conveyor systems with modules and connections, transported parcels." ;
-    owl:versionInfo "1.0" .
+    owl:imports <http://w3id.org/circularfactory/Workflow> ;
+    rdfs:label "FlexConveyor System Ontology" ;
+    rdfs:comment "Domain ontology for the FlexConveyor material handling system" .
 
-:FlexConveyorSystem a owl:Class ; 
-    rdfs:comment "A system of connected flex conveyor modules." .
+#################################################################
+# Classes
+#################################################################
 
-:FlexConveyorModule a owl:Class ;
-    rdfs:comment "A square conveyor module with 4 connectable ports." .
+:FlexConveyorModule rdf:type owl:Class ;
+    rdfs:subClassOf cfc:Resource ;
+    cfc_wf:hasWorkflow
+        :ReceiveWorkflow ,
+        :ReserveWorkflow ,
+        :ConveyWorkflow .
 
+:EntryModule rdf:type owl:Class ;
+    rdfs:subClassOf :FlexConveyorModule .
 
+:ExitModule rdf:type owl:Class ;
+    rdfs:subClassOf :FlexConveyorModule .
 
-:hasNorthConnection a owl:ObjectProperty ;
-    rdfs:subPropertyOf inf:isAttribute ;
-    rdfs:domain :FlexConveyorModule ;
-    rdfs:range [
-        a owl:Class ;
-        [ a owl:Restriction ;
-          owl:onProperty inf:hasReferencedObject ;
-          owl:someValuesFrom :FlexConveyorModule
+:WarehouseManagementSystem rdf:type owl:Class ;
+    rdfs:subClassOf cfc:Resource ;
+    cfc_wf:hasWorkflow
+        :SpawnBoxWorkflow ,
+        :AcceptBoxWorkflow .
+
+:Box rdf:type owl:Class .
+
+:Connection rdf:type owl:Class .
+
+#################################################################
+# Payload Structure Definitions (Blank Nodes)
+#################################################################
+
+# Payload structures defined as labeled blank nodes with restrictions
+
+_:ReservePayload a owl:Class ;
+    owl:intersectionOf (
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToBox ;
+            owl:hasValue :Box
         ]
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToSourceModule ;
+            owl:hasValue :FlexConveyorModule
+        ]
+    ) .
+
+_:ConveyPayload a owl:Class ;
+    owl:intersectionOf (
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToBox ;
+            owl:hasValue :Box
+        ]
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToDestinationModule ;
+            owl:hasValue :FlexConveyorModule
+        ]
+    ) .
+
+_:ReceivePayload a owl:Class ;
+    owl:intersectionOf (
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToBox ;
+            owl:hasValue :Box
+        ]
+    ) .
+
+_:SpawnBoxPayload a owl:Class ;
+    owl:intersectionOf (
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToBox ;
+            owl:hasValue :Box
+        ]
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToOriginModule ;
+            owl:hasValue :FlexConveyorModule
+        ]
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToDestinationModule ;
+            owl:hasValue :FlexConveyorModule
+        ]
+    ) .
+
+_:AcceptBoxPayload a owl:Class ;
+    owl:intersectionOf (
+        [
+            a owl:Restriction ;
+            owl:onProperty :refersToBox ;
+            owl:hasValue :Box
+        ]
+    ) .
+
+#################################################################
+# Response Structure Classes
+#################################################################
+
+:ReserveResponse rdf:type owl:Class ;
+    rdfs:subClassOf cfc_wf:WorkflowResponse .
+
+:ConveyResponse rdf:type owl:Class ;
+    rdfs:subClassOf cfc_wf:WorkflowResponse .
+
+:ReceiveResponse rdf:type owl:Class ;
+    rdfs:subClassOf cfc_wf:WorkflowResponse .
+
+:SpawnBoxResponse rdf:type owl:Class ;
+    rdfs:subClassOf cfc_wf:WorkflowResponse .
+
+:AcceptBoxResponse rdf:type owl:Class ;
+    rdfs:subClassOf cfc_wf:WorkflowResponse .
+
+#################################################################
+# Workflow Classes
+#################################################################
+
+:ReserveWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf cfc_wf:Workflow ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty cfc_wf:accepts ;
+        owl:hasValue _:ReservePayload
     ] ;
-    rdfs:comment "The module connected to the north port (port 1)." .
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty cfc_wf:receives ;
+        owl:hasValue _:ReserveResponse
+    ] .
 
-:hasEastConnection a owl:ObjectProperty ;
-    rdfs:subPropertyOf inf:isAttribute ;
+:ConveyWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf cfc_wf:Workflow ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty cfc_wf:accepts ;
+        owl:hasValue _:ConveyPayload
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty cfc_wf:receives ;
+        owl:hasValue _:ConveyResponse
+    ] .
+
+:ReceiveWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf cfc_wf:Workflow ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty cfc_wf:accepts ;
+        owl:hasValue _:ReceivePayload
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty cfc_wf:receives ;
+        owl:hasValue _:ReceiveResponse
+    ] .
+
+:SpawnBoxWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf cfc_wf:Workflow ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty cfc_wf:accepts ;
+        owl:hasValue _:SpawnBoxPayload
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty cfc_wf:receives ;
+        owl:hasValue _:SpawnBoxResponse
+    ] .
+
+:AcceptBoxWorkflow rdf:type owl:Class ;
+    rdfs:subClassOf cfc_wf:Workflow ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty cfc_wf:accepts ;
+        owl:hasValue _:AcceptBoxPayload
+    ] ;
+    rdfs:subClassOf [
+        a owl:Restriction ;
+        owl:onProperty cfc_wf:receives ;
+        owl:hasValue _:AcceptBoxResponse
+    ] .
+
+#################################################################
+# Other Domain-Specific Classes
+#################################################################
+
+:BoxState rdf:type owl:Class .
+
+:Created rdf:type owl:NamedIndividual, :BoxState .
+:InTransit rdf:type owl:NamedIndividual, :BoxState .
+:Delivered rdf:type owl:NamedIndividual, :BoxState .
+
+:Direction rdf:type owl:Class .
+
+:North rdf:type owl:NamedIndividual , :Direction .
+:South rdf:type owl:NamedIndividual , :Direction .
+:East  rdf:type owl:NamedIndividual , :Direction .
+:West  rdf:type owl:NamedIndividual , :Direction .
+
+#################################################################
+# Object Properties
+#################################################################
+
+:hasConnection rdf:type owl:ObjectProperty ;
     rdfs:domain :FlexConveyorModule ;
-    rdfs:range :FlexConveyorModule ;
-    rdfs:comment "The module connected to the east port (port 2)." .
+    rdfs:range :Connection .
 
-:hasSouthConnection a owl:ObjectProperty ;
-    rdfs:subPropertyOf inf:isAttribute ;
+:connectsTo rdf:type owl:ObjectProperty ;
+    rdfs:domain :Connection ;
+    rdfs:range :FlexConveyorModule .
+
+:hasPossession rdf:type owl:ObjectProperty ;
+    rdfs:domain cfc:Resource ;
+    rdfs:range :Box ;
+    owl:inverseOf :isPossessedBy .
+
+:isPossessedBy rdf:type owl:ObjectProperty ;
+    rdfs:domain :Box ;
+    rdfs:range cfc:Resource ;
+    owl:inverseOf :hasPossession .
+
+:hasOrigin rdf:type owl:ObjectProperty ;
+    rdfs:domain :Box ;
+    rdfs:range :FlexConveyorModule .
+
+:hasDestination rdf:type owl:ObjectProperty ;
+    rdfs:domain :Box ;
+    rdfs:range :FlexConveyorModule .
+
+:hasState rdf:type owl:ObjectProperty ;
+    rdfs:domain :Box ;
+    rdfs:range :BoxState .
+
+:hasDirection rdf:type owl:ObjectProperty ;
+    rdfs:domain :Connection ;
+    rdfs:range :Direction .
+
+#################################################################
+# Datatype Properties
+#################################################################
+
+:onPort rdf:type owl:DatatypeProperty ;
+    rdfs:domain :Connection ;
+    rdfs:range xsd:integer .
+
+:hasX rdf:type owl:DatatypeProperty ;
     rdfs:domain :FlexConveyorModule ;
-    rdfs:range :FlexConveyorModule ;
-    rdfs:comment "The module connected to the south port (port 3)." .
+    rdfs:range xsd:integer .
 
-:hasWestConnection a owl:ObjectProperty ;
-    rdfs:subPropertyOf inf:isAttribute ;
+:hasY rdf:type owl:DatatypeProperty ;
     rdfs:domain :FlexConveyorModule ;
+    rdfs:range xsd:integer .
+
+#################################################################
+# Payload Field Properties
+#################################################################
+
+:refersToBox rdf:type owl:ObjectProperty ;
+    rdfs:domain [
+        a owl:Restriction ;
+        owl:hasValue cfc_wf:Workflow ;
+        owl:onProperty [ owl:inverseOf cfc_wf:accepts ]
+    ] ;
+    rdfs:range :Box ;
+    rdfs:comment "References a box in workflow payloads" .
+
+:refersToSourceModule rdf:type owl:ObjectProperty ;
+    rdfs:domain [
+        a owl:Restriction ;
+        owl:hasValue cfc_wf:Workflow ;
+        owl:onProperty [ owl:inverseOf cfc_wf:accepts ]
+    ] ;
     rdfs:range :FlexConveyorModule ;
-    rdfs:comment "The module connected to the west port (port 4)." .
+    rdfs:comment "References the source module in workflow payloads" .
 
-
-
-
-
-
-
-
-:Parcel a owl:Class ;
-    rdfs:comment "A parcel transported on the flex conveyor system." .
-
-
-
-:isPossessedBy a owl:ObjectProperty ;
-    rdfs:domain :Parcel ;
+:refersToDestinationModule rdf:type owl:ObjectProperty ;
+    rdfs:domain [
+        a owl:Restriction ;
+        owl:hasValue cfc_wf:Workflow ;
+        owl:onProperty [ owl:inverseOf cfc_wf:accepts ]
+    ] ;
     rdfs:range :FlexConveyorModule ;
-    owl:inverseOf :hasPossession ;
-    rdfs:comment "Parcel is possessed by exactly one module (if any)." .
+    rdfs:comment "References the destination module in workflow payloads" .
 
-:hasPossession a owl:ObjectProperty ;
-    rdfs:domain :FlexConveyorModule ;
-    rdfs:range :Parcel ;
-    owl:inverseOf :isPossessedBy ;
-    rdfs:comment "a FlexconveyorModule posesses a Parcel." .
-
-:hasDestination a owl:ObjectProperty ;
-    rdfs:domain :Parcel ;
+:refersToOriginModule rdf:type owl:ObjectProperty ;
+    rdfs:domain [
+        a owl:Restriction ;
+        owl:hasValue cfc_wf:Workflow ;
+        owl:onProperty [ owl:inverseOf cfc_wf:accepts ]
+    ] ;
     rdfs:range :FlexConveyorModule ;
-    rdfs:comment "Destination module for the parcel (exactly one module)." .
+    rdfs:comment "References the origin module for box spawning" .
 
+#################################################################
+# Workflow Ontology
+#################################################################
 
+cfc_wf: rdf:type owl:Ontology ;
+    rdfs:label "Generic Workflow Ontology" ;
+    rdfs:comment "Abstract ontology defining workflow patterns with payloads and responses, designed for reuse across different workflow-based systems" .
 
-:containsFlexConveyorModule a owl:ObjectProperty ;
-    rdfs:subPropertyOf inf:includes ;
-    rdfs:domain :FlexConveyorSystem ;
-    rdfs:range :FlexConveyorModule ;
-    rdfs:comment "Indicates that a FlexConveyorSystem contains a FlexConveyorModule." .
+#################################################################
+# Workflow Abstract Classes
+#################################################################
+
+cfc_wf:Workflow rdf:type owl:Class ;
+    rdfs:comment "Abstract class representing a computational workflow or service operation" .
+
+#################################################################
+# Workflow Object Properties
+#################################################################
+
+cfc_wf:hasWorkflow rdf:type owl:ObjectProperty ;
+    rdfs:domain cfc:Resource ;
+    rdfs:range cfc_wf:Workflow ;
+    rdfs:comment "Relates a resource to its available workflows" ;
+    owl:inverseOf cfc_wf:isWorkflowOf .
+
+cfc_wf:isWorkflowOf rdf:type owl:ObjectProperty ;
+    rdfs:domain cfc_wf:Workflow ;
+    rdfs:range cfc:Resource ;
+    rdfs:comment "Relates a workflow to the resource it operates on" ;
+    owl:inverseOf cfc_wf:hasWorkflow .
+
+cfc_wf:accepts rdf:type owl:ObjectProperty ;
+    rdfs:domain cfc_wf:Workflow .
+
+cfc_wf:returns rdf:type owl:ObjectProperty ;
+    rdfs:domain cfc_wf:Workflow .
+
+#################################################################
+# Workflow Datatype Properties
+#################################################################
+
+cfc_wf:accessibleAt rdf:type owl:DatatypeProperty ;
+    rdfs:domain cfc_wf:Workflow ;
+    rdfs:range xsd:anyURI ;
+    rdfs:comment "URL endpoint where the workflow can be invoked via REST API" .

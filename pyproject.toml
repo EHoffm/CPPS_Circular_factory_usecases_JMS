@@ -3,15 +3,18 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "jms-usecase-2"
+name = "cpps-circular-factory-usecases-jms"
 version = "0.1.0"
 description = "FlexConveyor System with GraphDB integration and Streamlit interface"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
 license = "MIT"
-homepage = "https://gitlab.kit.edu/kit/ifl/forschung/sfb1574/inf/jms_usecase_2"
-repository = "https://gitlab.kit.edu/kit/ifl/forschung/sfb1574/inf/jms_usecase_2"
+homepage = "https://github.com/EHoffm/CPPS_Circular_factory_usecases_JMS"
+repository = "https://github.com/EHoffm/CPPS_Circular_factory_usecases_JMS"
 keywords = ["flexconveyor", "graphdb", "streamlit", "automation", "logistics"]
+include = [
+    { path = "Usecase_Vertical_integration/unscrewing_timeseries/*.csv", format = ["sdist", "wheel"] },
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -19,22 +22,29 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-packages = [{include = "jms_usecase_2"}]
+packages = [
+    {include = "Usecase_FlexConveyor_decentral"},
+    {include = "Usecase_Vertical_integration"},
+]
 
 [tool.poetry.dependencies]
-python = "3.13.11"
-graph-db-interface = "*"
-streamlit = "^1.28.0"
-matplotlib = "^3.7.0"
-graph_db_interface = {git = "https://gitlab.kit.edu/kit/ifl/opensource/circular_factory/inf/semantic_middleware_dev/graph_db_interface.git"}
-circular_factory_ogm = {git = "https://gitlab.kit.edu/kit/ifl/opensource/circular_factory/inf/circular_factory_ogm.git", branch = "prep_release"}
+python = ">=3.12,<3.14"
+streamlit = "^1.55.0"
+streamlit-autorefresh = "^1.0.1"
+matplotlib = "^3.10.8"
+Flask = "^3.1.0"
+graph-db-interface = "^2.0.1"
+kapps-ogm = "^0.1.2"
+semantic-middleware = { git = "https://github.com/SAWeindel/semantic_middleware.git", rev = "e11efd68eb855fa3baae67664b9c62c857d51069" }
+semantic-service = { git = "https://github.com/SAWeindel/semantic_service.git", rev = "ea79d9f40f8f80b1573001afabdb1222af49d9ef" }
+requests = "^2.32.3"
+pandas = "^3.0.2"
+python-dotenv = "^1.2.2"
+pydantic = "^2.11.7"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -46,11 +56,12 @@ mypy = "^1.5.0"
 pre-commit = "^3.3.0"
 
 [tool.poetry.scripts]
-flexconveyor-interface = "jms_usecase_2.src.streamlit_interface:main"
+flexconveyor-interface = "Usecase_FlexConveyor_decentral.src.Visualizer.visualizer_main:main"
+vertical-integration-demo = "Usecase_Vertical_integration.demo:main"
 
 [tool.black]
 line-length = 88
-target-version = ['py39']
+target-version = ['py313']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -67,7 +78,7 @@ extend-exclude = '''
 '''
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -90,7 +101,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 [tool.coverage.run]
-source = ["jms_usecase_2"]
+source = ["Usecase_FlexConveyor_decentral", "Usecase_Vertical_integration"]
 omit = [
     "*/tests/*",
     "*/test_*",
