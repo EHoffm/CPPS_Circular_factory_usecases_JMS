@@ -185,6 +185,7 @@ files = [
 
 [package.dependencies]
 frozenlist = ">=1.1.0"
+typing-extensions = {version = ">=4.2", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "altair"
@@ -249,6 +250,7 @@ files = [
 
 [package.dependencies]
 idna = ">=2.8"
+typing_extensions = {version = ">=4.5", markers = "python_version < \"3.13\""}
 
 [package.extras]
 trio = ["trio (>=0.32.0)"]
@@ -1041,6 +1043,9 @@ files = [
     {file = "exceptiongroup-1.3.1-py3-none-any.whl", hash = "sha256:a7a39a3bd276781e98394987d3a5701d0c4edffb633bb7a5144577f82c773598"},
     {file = "exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219"},
 ]
+
+[package.dependencies]
+typing-extensions = {version = ">=4.6.0", markers = "python_version < \"3.13\""}
 
 [package.extras]
 test = ["pytest (>=6)"]
@@ -3923,6 +3928,7 @@ files = [
 [package.dependencies]
 attrs = ">=22.2.0"
 rpds-py = ">=0.7.0"
+typing-extensions = {version = ">=4.4.0", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "regex"
@@ -5090,5 +5096,5 @@ type = ["pytest-mypy"]
 
 [metadata]
 lock-version = "2.1"
-python-versions = "3.13.11"
-content-hash = "195929437966b3abf5aa6e3a2f869827206fa61f2a91f3f0d32bdf35f4f6a65a"
+python-versions = ">=3.12,<3.14"
+content-hash = "962edfc2f864a90e3e088b6990021a4f12f1223001c2c0859d125f5dd6a67593"

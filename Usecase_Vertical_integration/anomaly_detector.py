@@ -1,6 +1,5 @@
-from graph_db_interface import GraphDB, GraphDBCredentials, IRI
-from kapps_ogm.ogm import OGM
-from kapps_ogm.utils.class_scope import ClassScope
+from graph_db_interface import GraphDB, IRI
+from kapps_ogm import ClassScope, OGM
 import json
 import requests
 

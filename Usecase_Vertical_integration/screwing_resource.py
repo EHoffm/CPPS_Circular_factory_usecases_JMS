@@ -1,5 +1,5 @@
 from graph_db_interface import IRI, GraphDB
-from kapps_ogm.ogm import OGM, ClassScope
+from kapps_ogm import ClassScope, OGM
 import requests
 
 # GraphdbCredentials.from_env()

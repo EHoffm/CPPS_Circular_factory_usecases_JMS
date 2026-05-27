@@ -66,7 +66,7 @@ def fetch_box_locations_for_monitoring(ogm) -> Dict[str, List[str]]:
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
     # Import the monitor module to reuse existing functionality
-    from utils.system_state_monitor import get_box_locations
+    from .system_state_monitor import get_box_locations
 
     try:
         box_locations = get_box_locations(ogm)
@@ -224,7 +224,7 @@ def create_live_topology_figure(
         BytesIO buffer containing PNG image data
     """
     # Import the topology module to reuse node building and layout functions
-    from utils.topology_renderer import (
+    from .topology_renderer import (
         _build_nodes_from_directional_rows,
         _layout_nodes,
         _compute_figure_geometry,

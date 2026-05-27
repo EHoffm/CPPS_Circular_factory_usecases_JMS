@@ -5,9 +5,7 @@ Provides login UI components and session state management for GraphDB authentica
 """
 
 import streamlit as st
-from graph_db_interface.utils.graph_db_credentials import GraphDBCredentials
-from graph_db_interface import GraphDB
-from graph_db_interface.utils.iri import IRI
+from graph_db_interface import GraphDB, GraphDBCredentials, IRI
 from kapps_ogm import OGM
 
 

@@ -14,46 +14,33 @@ from pathlib import Path
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
-
-def _bootstrap_import_paths() -> None:
-    script_path = Path(__file__).resolve()
-    package_dirs = (
-        "kapps_ogm",
-        "graph_db_interface",
-        "semantic_middleware",
-        "datamodel_connector",
-    )
-
-    for parent in script_path.parents:
-        parent_str = str(parent)
-        if parent_str not in sys.path:
-            sys.path.insert(0, parent_str)
-        for package_dir in package_dirs:
-            candidate = parent / package_dir
-            if candidate.is_dir():
-                candidate_str = str(candidate)
-                if candidate_str not in sys.path:
-                    sys.path.insert(0, candidate_str)
-
-
-_bootstrap_import_paths()
-
-from utils.bootstrap import (
-    register_shutdown_handlers,
-    instantiate_modules,
-    instantiate_wms,
-    get_wms,
-)
-from utils import (
+from Usecase_FlexConveyor_decentral.src.Visualizer.utils import (
+    clear_flexconveyor_instances_graph,
+    get_ogm,
+    initialize_flex_instance_session_state,
     initialize_login_session_state,
-    render_login_sidebar,
     is_connected,
     is_ogm_initialized,
-    get_ogm,
-    clear_flexconveyor_instances_graph,
     render_flex_module_instantiation,
-    initialize_flex_instance_session_state,
+    render_login_sidebar,
 )
+from Usecase_FlexConveyor_decentral.src.Visualizer.utils.bootstrap import (
+    get_wms,
+    instantiate_modules,
+    instantiate_wms,
+    register_shutdown_handlers,
+)
+
+
+VISUALIZER_UTILS_MODULE_PREFIX = (
+    "Usecase_FlexConveyor_decentral.src.Visualizer.utils"
+)
+
+
+def _import_utils_module(module_name: str):
+    return importlib.import_module(
+        f"{VISUALIZER_UTILS_MODULE_PREFIX}.{module_name}"
+    )
 
 register_shutdown_handlers()
 
@@ -265,7 +252,7 @@ else:
         if action_col1.button(
             "discover instantiated modules", key="discover_instantiated_modules"
         ):
-            monitor_module = importlib.import_module("utils.system_state_monitor")
+            monitor_module = _import_utils_module("system_state_monitor")
             st.session_state.discovered_modules = monitor_module.discover_modules(
                 st.session_state.get("ogm")
             )
@@ -274,7 +261,7 @@ else:
                 st.session_state.get("ogm")
             )
 
-            topology_module = importlib.import_module("utils.topology_renderer")
+            topology_module = _import_utils_module("topology_renderer")
             st.session_state.directional_rows = (
                 topology_module.adjacency_map_to_directional_rows(
                     st.session_state.adjacency_matrix
@@ -305,7 +292,7 @@ else:
 
                 # Detect state change and log it
                 if enable_monitoring != st.session_state.live_monitor_previous_state:
-                    live_monitor_module = importlib.import_module("utils.live_monitor")
+                    live_monitor_module = _import_utils_module("live_monitor")
                     live_monitor_module.log_monitoring_state_change(enable_monitoring)
                     st.session_state.live_monitor_previous_state = enable_monitoring
 
@@ -335,7 +322,7 @@ else:
                 )
 
                 # Call the update method
-                live_monitor_module = importlib.import_module("utils.live_monitor")
+                live_monitor_module = _import_utils_module("live_monitor")
                 ogm = get_ogm()
                 update_data = live_monitor_module.update_live_monitoring_data(ogm)
 
@@ -343,8 +330,8 @@ else:
 
             # Display dynamic topology visualization
             if st.session_state.directional_rows:
-                topology_module = importlib.import_module("utils.topology_renderer")
-                live_monitor_module = importlib.import_module("utils.live_monitor")
+                topology_module = _import_utils_module("topology_renderer")
+                live_monitor_module = _import_utils_module("live_monitor")
 
                 ogm = get_ogm()
                 box_locations = live_monitor_module.fetch_box_locations_for_monitoring(
@@ -386,7 +373,7 @@ else:
         # Show live box locations if auto-refresh is enabled, otherwise show manual refresh button
         if st.session_state.get("live_monitor_enabled", True):
             # Live monitoring mode - fetch and display automatically
-            live_monitor_module = importlib.import_module("utils.live_monitor")
+            live_monitor_module = _import_utils_module("live_monitor")
             ogm = get_ogm()
             box_locations = live_monitor_module.fetch_box_locations_for_monitoring(ogm)
 
@@ -417,7 +404,7 @@ else:
         else:
             # Manual refresh mode - show button
             if st.button("Refresh box locations", key="refresh_box_locations"):
-                monitor_module = importlib.import_module("utils.system_state_monitor")
+                monitor_module = _import_utils_module("system_state_monitor")
                 box_locations = monitor_module.get_box_locations(
                     st.session_state.get("ogm")
                 )
@@ -470,9 +457,9 @@ else:
 
             st.subheader("Inject and Route Boxes")
 
-            control_module = importlib.import_module("utils.control")
-            route_module = importlib.import_module("utils.route_planner")
-            topology_module = importlib.import_module("utils.topology_renderer")
+            control_module = _import_utils_module("control")
+            route_module = _import_utils_module("route_planner")
+            topology_module = _import_utils_module("topology_renderer")
 
             col_refresh, _ = st.columns([1, 3])
             with col_refresh:
@@ -607,8 +594,8 @@ else:
                     else:
                         # Build or reuse adjacency map from the monitor helpers
                         if not st.session_state.get("adjacency_matrix"):
-                            monitor_module = importlib.import_module(
-                                "utils.system_state_monitor"
+                            monitor_module = _import_utils_module(
+                                "system_state_monitor"
                             )
                             st.session_state.adjacency_matrix = (
                                 monitor_module.build_adjacency_matrix(ogm)

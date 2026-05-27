@@ -6,7 +6,7 @@ import time
 from collections import deque
 from typing import Optional, Any, Dict
 import semantic_middleware as smw
-from graph_db_interface.utils.iri import IRI
+from graph_db_interface import IRI
 
 from kapps_ogm import OGM, ClassScope
 from semantic_service import Service, Workflow, WorkflowPayload, WorkflowResponse

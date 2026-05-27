@@ -13,7 +13,7 @@ import time
 from typing import Optional, Dict, Any, List
 import random
 
-from graph_db_interface.utils.iri import IRI
+from graph_db_interface import IRI
 from pydantic import BaseModel
 
 from kapps_ogm import OGM, ClassScope

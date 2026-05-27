@@ -1,6 +1,6 @@
 import random
 import threading
-from urllib.parse import quote
+from importlib.resources import files
 from flask import Flask, request, jsonify, Response
 import uuid
 
@@ -19,9 +19,10 @@ app = Flask(__name__)
 
 
 def get_pd_series(frame: str, series: str) -> pd.Series:
-    pdData = pd.read_csv(
-        f"Usecase_Vertical_integration/unscrewing_timeseries/{frame}.csv"
-    )
+    with files(__package__).joinpath("unscrewing_timeseries", f"{frame}.csv").open(
+        "rb"
+    ) as csv_file:
+        pdData = pd.read_csv(csv_file)
     return pdData[series]
 
 

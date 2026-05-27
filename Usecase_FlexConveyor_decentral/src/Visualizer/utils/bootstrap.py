@@ -10,9 +10,8 @@ import signal
 import threading
 from typing import Any, List, Optional
 
-from graph_db_interface.utils.iri import IRI
-from kapps_ogm import OGM
-from kapps_ogm import ClassScope
+from graph_db_interface import IRI
+from kapps_ogm import ClassScope, OGM
 import semantic_middleware as smw
 
 

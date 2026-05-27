@@ -10,8 +10,8 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from kapps_ogm.ogm import OGM
-from graph_db_interface.utils.iri import IRI
+from graph_db_interface import IRI
+from kapps_ogm import OGM
 
 from .system_state_monitor import discover_modules as _discover_modules
 

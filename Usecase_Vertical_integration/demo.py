@@ -1,13 +1,12 @@
-from graph_db_interface import GraphDB, GraphDBCredentials, IRI
-from kapps_ogm.ogm import OGM
 import json
 import time
 from dotenv import load_dotenv
-from Usecase_Vertical_integration import screwing_resource
-from screwing_resource import ScrewingResource
-from anomaly_detector import AnomalyDetector
-from learner import Learner
-import db
+from graph_db_interface import IRI
+
+from . import db
+from .anomaly_detector import AnomalyDetector
+from .learner import Learner
+from .screwing_resource import ScrewingResource
 
 DB_HOST = "127.0.0.1"
 DB_PORT = 5050

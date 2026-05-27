@@ -11,7 +11,7 @@ import os
 from typing import Any, Dict, Optional
 from pydantic import BaseModel
 
-from graph_db_interface.utils.iri import IRI
+from graph_db_interface import IRI
 from kapps_ogm import OGM, ClassScope
 
 from .bootstrap import instantiate_modules, instantiate_wms
