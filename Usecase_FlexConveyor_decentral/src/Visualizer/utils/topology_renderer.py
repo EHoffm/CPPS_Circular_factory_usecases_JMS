@@ -94,7 +94,10 @@ def modules_payload_to_adjacency_map(
 
 
 def adjacency_map_to_directional_rows(
-    adjacency_map: dict[str | IRI, list[tuple[str | IRI | None, str | None]]] | list[dict[str, Any]],
+    adjacency_map: (
+        dict[str | IRI, list[tuple[str | IRI | None, str | None]]]
+        | list[dict[str, Any]]
+    ),
 ) -> list[list[IRI | int]]:
     """Convert adjacency data to [module, up, right, down, left] rows.
 
@@ -109,11 +112,15 @@ def adjacency_map_to_directional_rows(
         normalized_map = modules_payload_to_adjacency_map(adjacency_map)
     else:
         for module_id, entries in adjacency_map.items():
-            module_iri = module_id if isinstance(module_id, IRI) else IRI(str(module_id))
+            module_iri = (
+                module_id if isinstance(module_id, IRI) else IRI(str(module_id))
+            )
             normalized_entries: list[tuple[IRI | None, str | None]] = []
             for target, direction in entries:
                 target_iri = (
-                    target if isinstance(target, IRI) else IRI(str(target)) if target else None
+                    target
+                    if isinstance(target, IRI)
+                    else IRI(str(target)) if target else None
                 )
                 normalized_entries.append((target_iri, direction))
             normalized_map[module_iri] = normalized_entries
@@ -160,7 +167,9 @@ def _build_nodes_from_directional_rows(
             if neighbor_id == 0 or neighbor_id is None:
                 continue
 
-            neighbor_iri = neighbor_id if isinstance(neighbor_id, IRI) else IRI(str(neighbor_id))
+            neighbor_iri = (
+                neighbor_id if isinstance(neighbor_id, IRI) else IRI(str(neighbor_id))
+            )
             neighbor_key = str(neighbor_iri)
             if neighbor_key not in nodes_by_id:
                 nodes_by_id[neighbor_key] = FlexConveyorNode(neighbor_iri)
@@ -175,7 +184,11 @@ def _build_nodes_from_directional_rows(
             else:
                 current_node.left_connected_module = neighbor_node
 
-    return [nodes_by_id[str(row[0] if isinstance(row[0], IRI) else IRI(str(row[0])))] for row in directional_rows if row]
+    return [
+        nodes_by_id[str(row[0] if isinstance(row[0], IRI) else IRI(str(row[0])))]
+        for row in directional_rows
+        if row
+    ]
 
 
 def _layout_nodes(nodes: list[FlexConveyorNode]) -> None:
@@ -215,8 +228,28 @@ def _layout_nodes(nodes: list[FlexConveyorNode]) -> None:
             if neighbor is None or neighbor in positioned:
                 continue
             delta_x, delta_y = deltas[index]
-            positioned[neighbor] = (current_x + delta_x * width, current_y + delta_y * height)
+            positioned[neighbor] = (
+                current_x + delta_x * width,
+                current_y + delta_y * height,
+            )
             queueing.append(neighbor)
+
+
+def _compute_figure_geometry(nodes: list[FlexConveyorNode]):
+    """Compute figure size and axis limits based on node layout."""
+
+    min_x = min(node.x for node in nodes)
+    max_x = max(node.x for node in nodes)
+    min_y = min(node.y for node in nodes)
+    max_y = max(node.y for node in nodes)
+
+    padding = 100
+    width_range = max_x - min_x + 2 * padding
+    height_range = max_y - min_y + 2 * padding
+    fig_width = min(max(8, width_range / 80), 20)
+    fig_height = min(max(6, height_range / 80), 16)
+
+    return (min_x, max_x, min_y, max_y, padding, fig_width, fig_height)
 
 
 def directional_rows_to_figure(directional_rows: list[list[IRI | int]]):
@@ -231,16 +264,9 @@ def directional_rows_to_figure(directional_rows: list[list[IRI | int]]):
         ax.set_axis_off()
         return fig
 
-    min_x = min(node.x for node in nodes)
-    max_x = max(node.x for node in nodes)
-    min_y = min(node.y for node in nodes)
-    max_y = max(node.y for node in nodes)
-
-    padding = 100
-    width_range = max_x - min_x + 2 * padding
-    height_range = max_y - min_y + 2 * padding
-    fig_width = min(max(8, width_range / 80), 20)
-    fig_height = min(max(6, height_range / 80), 16)
+    min_x, max_x, min_y, max_y, padding, fig_width, fig_height = (
+        _compute_figure_geometry(nodes)
+    )
     fig.set_size_inches(fig_width, fig_height)
 
     for node in nodes:
@@ -262,6 +288,80 @@ def directional_rows_to_figure(directional_rows: list[list[IRI | int]]):
             fontsize=9,
             fontweight="bold",
         )
+
+    ax.set_xlim(min_x - padding, max_x + padding)
+    ax.set_ylim(min_y - padding, max_y + padding)
+    ax.set_aspect("equal")
+    ax.set_axis_off()
+
+    try:
+        fig.tight_layout()
+    except UserWarning:
+        fig.subplots_adjust(left=0.1, right=0.95, top=0.9, bottom=0.1)
+
+    return fig
+
+
+def directional_rows_to_figure_with_box(
+    directional_rows: list[list[IRI | int]],
+    box_module_iri: str | IRI | None,
+):
+    """Render topology with an overlaid brown box at the given module.
+
+    Uses the same layout and node rendering as `directional_rows_to_figure`
+    and draws an additional smaller rectangle centered on the selected
+    module to represent a moving box.
+    """
+
+    nodes = _build_nodes_from_directional_rows(directional_rows)
+    _layout_nodes(nodes)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    if not nodes:
+        ax.set_title("FlexConveyor Topology")
+        ax.set_axis_off()
+        return fig
+
+    min_x, max_x, min_y, max_y, padding, fig_width, fig_height = (
+        _compute_figure_geometry(nodes)
+    )
+    fig.set_size_inches(fig_width, fig_height)
+
+    box_module_str = str(box_module_iri) if box_module_iri is not None else None
+
+    for node in nodes:
+        rect = patches.Rectangle(
+            (node.x - 25, node.y - 25),
+            50,
+            50,
+            linewidth=2,
+            edgecolor="black",
+            facecolor="lightblue",
+        )
+        ax.add_patch(rect)
+        ax.text(
+            node.x,
+            node.y,
+            str(node.id.fragment),
+            ha="center",
+            va="center",
+            fontsize=9,
+            fontweight="bold",
+        )
+
+        if box_module_str is not None and str(node.id) == box_module_str:
+            # Draw a smaller brown box centered in the module to
+            # represent the moving parcel.
+            box_rect = patches.Rectangle(
+                (node.x - 10, node.y - 10),
+                20,
+                20,
+                linewidth=1.5,
+                edgecolor="saddlebrown",
+                facecolor="peru",
+            )
+            ax.add_patch(box_rect)
 
     ax.set_xlim(min_x - padding, max_x + padding)
     ax.set_ylim(min_y - padding, max_y + padding)

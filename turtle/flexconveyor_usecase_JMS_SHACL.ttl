@@ -1,0 +1,210 @@
+@prefix : <http://w3id.org/circularfactory/FlexConveyor#> .
+@prefix cfc: <http://www.sfb1574.kit.edu/core#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+#################################################################
+# SHACL Shapes for the FlexConveyor System
+#
+# Structure:
+#   1. SHACL Core shapes (no SPARQL)
+#   2. SHACL SPARQL constraints
+#################################################################
+
+
+#################################################################
+# 1. SHACL CORE SHAPES
+#################################################################
+
+# ---------------------------------------------------------------
+# Box shape
+# ---------------------------------------------------------------
+:BoxShape rdf:type sh:NodeShape ;
+    sh:targetClass :Box ;
+
+    # Every box must have exactly one origin, which must be a FlexConveyorModule
+    sh:property [
+        sh:path :hasOrigin ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:class :FlexConveyorModule ;
+        sh:message "A Box must have exactly one hasOrigin pointing to a FlexConveyorModule." ;
+    ] ;
+
+    # Every box must have exactly one destination, which must be a FlexConveyorModule
+    sh:property [
+        sh:path :hasDestination ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:class :FlexConveyorModule ;
+        sh:message "A Box must have exactly one hasDestination pointing to a FlexConveyorModule." ;
+    ] ;
+
+    # Origin and destination must be different individuals
+    sh:property [
+        sh:path :hasOrigin ;
+        sh:disjoint :hasDestination ;
+        sh:message "A Box's hasOrigin and hasDestination must be different modules." ;
+    ] ;
+
+    # Every box must have exactly one state
+    sh:property [
+        sh:path :hasState ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( :Created :InTransit :Delivered ) ;
+        sh:message "A Box must have exactly one hasState, which must be Created, InTransit, or Delivered." ;
+    ] .
+
+
+# ---------------------------------------------------------------
+# FlexConveyorModule shape
+# ---------------------------------------------------------------
+:FlexConveyorModuleShape rdf:type sh:NodeShape ;
+    sh:targetClass :FlexConveyorModule ;
+
+    # A module holds at most one box at a time
+    sh:property [
+        sh:path :hasPossession ;
+        sh:maxCount 1 ;
+        sh:class :Box ;
+        sh:message "A FlexConveyorModule may possess at most one Box at a time." ;
+    ] ;
+
+    .
+
+
+# ---------------------------------------------------------------
+# Connection shape
+# ---------------------------------------------------------------
+:ConnectionShape rdf:type sh:NodeShape ;
+    sh:targetClass :Connection ;
+
+    # Every connection must point to exactly one target module
+    sh:property [
+        sh:path :connectsTo ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:class :FlexConveyorModule ;
+        sh:message "A Connection must link to exactly one FlexConveyorModule via connectsTo." ;
+    ] ;
+
+    # Every connection must have exactly one direction, from the four cardinal individuals
+    sh:property [
+        sh:path :hasDirection ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( :North :South :East :West ) ;
+        sh:message "A Connection must have exactly one hasDirection, which must be North, South, East, or West." ;
+    ] ;
+
+    # Every connection must specify exactly one port number
+    sh:property [
+        sh:path :onPort ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:integer ;
+        sh:message "A Connection must have exactly one integer onPort value." ;
+    ] .
+
+
+# # ---------------------------------------------------------------
+# # Workflow shape
+# # ---------------------------------------------------------------
+# :WorkflowShape rdf:type sh:NodeShape ;
+#     sh:targetClass :Workflow ;
+
+#     # If accessibleAt is present, it must be a single IRI (workflow may omit it when down)
+#     sh:property [
+#         sh:path :accessibleAt ;
+#         sh:maxCount 1 ;
+#         sh:nodeKind xsd:IRI ;
+#         sh:message "A Workflow's accessibleAt value, if present, must be a single IRI." ;
+#     ] .
+
+
+#################################################################
+# 2. SHACL SPARQL CONSTRAINTS
+#################################################################
+
+# ---------------------------------------------------------------
+# A box in Created state must not be possessed by a FlexConveyorModule
+# ---------------------------------------------------------------
+:CreatedBoxNotOnModuleShape rdf:type sh:NodeShape ;
+    sh:targetClass :Box ;
+    sh:sparql [
+        sh:message "A Box in Created state must not be possessed by a FlexConveyorModule." ;
+        sh:prefixes [
+            sh:declare [
+                sh:prefix "fc" ;
+                sh:namespace "http://w3id.org/circularfactory/FlexConveyor#"^^xsd:anyURI ;
+            ]
+        ] ;
+        sh:select """
+            SELECT $this
+            WHERE {
+                $this fc:hasState ?state .
+                ?state rdf:type fc:Created .
+                $this fc:isPossessedBy ?module .
+                ?module rdf:type fc:FlexConveyorModule .
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------
+# A box in Delivered state must not be possessed by anyone
+# ---------------------------------------------------------------
+:DeliveredBoxNotPossessedShape rdf:type sh:NodeShape ;
+    sh:targetClass :Box ;
+    sh:sparql [
+        sh:message "A Box in Delivered state must not be possessed by any resource." ;
+        sh:prefixes [
+            sh:declare [
+                sh:prefix "fc" ;
+                sh:namespace "http://w3id.org/circularfactory/FlexConveyor#"^^xsd:anyURI ;
+            ]
+        ] ;
+        sh:select """
+            SELECT $this
+            WHERE {
+                $this fc:hasState ?state .
+                ?state rdf:type fc:Delivered .
+                $this fc:isPossessedBy ?anyone .
+            }
+        """ ;
+    ] .
+
+
+# ---------------------------------------------------------------
+# A box in InTransit state must be possessed by exactly one resource
+# ---------------------------------------------------------------
+:InTransitBoxPossessedShape rdf:type sh:NodeShape ;
+    sh:targetClass :Box ;
+    sh:sparql [
+        sh:message "A Box in InTransit state must be possessed by exactly one resource." ;
+        sh:prefixes [
+            sh:declare [
+                sh:prefix "fc" ;
+                sh:namespace "http://w3id.org/circularfactory/FlexConveyor#"^^xsd:anyURI ;
+            ]
+        ] ;
+        sh:select """
+            SELECT $this
+            WHERE {
+                $this fc:hasState ?state .
+                ?state rdf:type fc:InTransit .
+                {
+                    SELECT $this (COUNT(?possessor) AS ?count)
+                    WHERE {
+                        $this fc:isPossessedBy ?possessor .
+                    }
+                    GROUP BY $this
+                }
+                FILTER (?count != 1)
+            }
+        """ ;
+    ] .

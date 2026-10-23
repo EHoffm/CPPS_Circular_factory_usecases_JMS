@@ -1,0 +1,1 @@
+"""Vertical integration demo package."""

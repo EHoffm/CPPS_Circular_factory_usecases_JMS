@@ -15,6 +15,11 @@ from .flex_module_instance import (
     clear_flexconveyor_instances_graph,
 )
 
+from .runtime_control import (
+    filter_modules_with_urls,
+    inject_box_via_receive,
+)
+
 __all__ = [
     "initialize_login_session_state",
     "render_login_sidebar",
@@ -25,4 +30,6 @@ __all__ = [
     "render_flex_module_instantiation",
     "initialize_flex_instance_session_state",
     "clear_flexconveyor_instances_graph",
+    "filter_modules_with_urls",
+    "inject_box_via_receive",
 ]
