@@ -307,6 +307,9 @@ def _is_streamlit_runtime() -> bool:
 
 
 def main() -> int:
+    import kapps_ogm
+
+    print(f"DIESER ORDNER IST SCHULD: {os.path.dirname(kapps_ogm.__file__)}")
     """Run this visualizer via `streamlit run` when invoked as a plain Python script."""
     if _is_streamlit_runtime():
         return 0
